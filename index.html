@@ -1,18 +1,19 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang='en'>
 
 <head>
 <title>ResizeImage.ARnc</title>
 <meta name='title' content='ResizeImage.ARnc'/>
 <meta name='description' content='ResizeImage.ARnc is a free online image resizing and compression tool. Resize, compress, crop and edit your photos directly in your browser.'/>
 <meta name='robots' content='index, follow, max-image-preview:large'/>
+<meta name='theme-color' content='#006400'/>
+<meta name='viewport' content='width=device-width, initial-scale=1, viewport-fit=cover'/>
 <meta property='og:title' content='ResizeImage.ARnc'/>
 <meta property='og:site_name' content='ResizeImage.ARnc'/>
 <meta name='twitter:title' content='ResizeImage.ARnc'/>
-<link rel='canonical' href='' id='standaloneCanonical'/>
-<script>document.getElementById('standaloneCanonical').href=window.location.href.split('#')[0];</script>
+<link rel='canonical' href='./'/>
 <meta content='wxhUml4BEJws6rWVL4hBZl7jGahw8_eljlfihQ9DSWs' name='google-site-verification'/>
-<style id='blogger-skin'>
+<style id='main-site-css'>
 
 * {
   box-sizing: border-box;
@@ -612,7 +613,7 @@ body {
 /* SAFE ADD-ON ONLY: transparent-preview checkerboard.
    No JavaScript/function/button/processing logic is changed. */
 .preview img#previewImage,
-.preview img[alt=&quot;Preview&quot;] {
+.preview img[alt="Preview"] {
   background-color:#f8f8f8;
   background-image:
     linear-gradient(45deg,#e7e7e7 25%,transparent 25%),
@@ -749,12 +750,12 @@ body {
 
 .authStatus{min-height:18px;margin-top:10px;font-size:12px;line-height:1.45;text-align:center;color:#475569}
 .authDivider{display:flex;align-items:center;gap:8px;margin:12px 0;color:#94a3b8;font-size:11px}
-.authDivider:before,.authDivider:after{content:&#39;&#39;;height:1px;background:#e2e8f0;flex:1}
+.authDivider:before,.authDivider:after{content:'';height:1px;background:#e2e8f0;flex:1}
 .authNote{margin-top:12px;padding:9px;background:#f8fafc;border-radius:8px;color:#64748b;font-size:11px;line-height:1.45}
-html[data-theme=&#39;dark&#39;] .authUserMenu{background:#1f2937;color:#fff}
-html[data-theme=&#39;dark&#39;] .authUserEmail{color:#cbd5e1;border-color:#374151}
-html[data-theme=&#39;dark&#39;] .authUserMenu button{color:#fff!important}
-html[data-theme=&#39;dark&#39;] .authUserMenu button:hover{background:#374151!important}
+html[data-theme='dark'] .authUserMenu{background:#1f2937;color:#fff}
+html[data-theme='dark'] .authUserEmail{color:#cbd5e1;border-color:#374151}
+html[data-theme='dark'] .authUserMenu button{color:#fff!important}
+html[data-theme='dark'] .authUserMenu button:hover{background:#374151!important}
 @media(max-width:600px){
   .authUserMenu{position:fixed;left:12px;right:12px;bottom:82px;min-width:0}
   .authModal{padding:12px}
@@ -867,31 +868,31 @@ html[data-theme=&#39;dark&#39;] .authUserMenu button:hover{background:#374151!im
 <style id='additional-section-focus-css'>
 /* When one Additional section is opened: keep only the requested section,
    the upload sessions/text, Resize &amp; Compress controls and Preview visible. */
-body.additionalSectionFocus .container &gt; *:not(h1):not(.subtitle):not(p):not(#singleUploadLabel):not(#fileInput):not(#multiUploadLabel):not(#multiFileInput):not(#postUploadTools):not(.controls):not(.preview){display:none !important;}
-body.additionalSectionFocus #postUploadTools &gt; .additionalToolsToggle,
-body.additionalSectionFocus #postUploadTools &gt; .proFeatureBox:not(.additionalToolsGroup){display:none !important;}
+body.additionalSectionFocus .container > *:not(h1):not(.subtitle):not(p):not(#singleUploadLabel):not(#fileInput):not(#multiUploadLabel):not(#multiFileInput):not(#postUploadTools):not(.controls):not(.preview){display:none !important;}
+body.additionalSectionFocus #postUploadTools > .additionalToolsToggle,
+body.additionalSectionFocus #postUploadTools > .proFeatureBox:not(.additionalToolsGroup){display:none !important;}
 body.additionalSectionFocus #additionalToolsGroup{display:block !important;}
-body.additionalSectionFocus #additionalToolsGroup &gt; .collapsibleSection{display:none !important;}
-body.additionalSectionFocus #additionalToolsGroup &gt; .collapsibleSection.activeAdditionalSection{display:block !important;}
+body.additionalSectionFocus #additionalToolsGroup > .collapsibleSection{display:none !important;}
+body.additionalSectionFocus #additionalToolsGroup > .collapsibleSection.activeAdditionalSection{display:block !important;}
 /* In focus mode hide the normal Width/Height/MP/KB/Format/etc. controls. Keep only Resize &amp; Compress. */
-body.additionalSectionFocus .controls &gt; .box,
-body.additionalSectionFocus .controls &gt; .checkbox,
+body.additionalSectionFocus .controls > .box,
+body.additionalSectionFocus .controls > .checkbox,
 body.additionalSectionFocus #keepRatio,
-body.additionalSectionFocus label[for=&#39;keepRatio&#39;],
+body.additionalSectionFocus label[for='keepRatio'],
 body.additionalSectionFocus #keepRatio + label,
-body.additionalSectionFocus .controls &gt; .cropArea,
-body.additionalSectionFocus .controls &gt; .cropInfo,
-body.additionalSectionFocus .controls &gt; .cropNavigation,
-body.additionalSectionFocus .controls &gt; #cropStartBtn,
-body.additionalSectionFocus .controls &gt; #applyCropBtn,
-body.additionalSectionFocus .controls &gt; #cancelCropBtn,
-body.additionalSectionFocus .controls &gt; #batchResizeBtn,
-body.additionalSectionFocus .controls &gt; .batchList,
-body.additionalSectionFocus .controls &gt; .progressWrap,
-body.additionalSectionFocus .controls &gt; .beforeAfter,
-body.additionalSectionFocus .controls &gt; .download,
-body.additionalSectionFocus .controls &gt; .pdfDownload{display:none !important;}
-body.additionalSectionFocus .controls &gt; #resizeBtn{display:block !important;}
+body.additionalSectionFocus .controls > .cropArea,
+body.additionalSectionFocus .controls > .cropInfo,
+body.additionalSectionFocus .controls > .cropNavigation,
+body.additionalSectionFocus .controls > #cropStartBtn,
+body.additionalSectionFocus .controls > #applyCropBtn,
+body.additionalSectionFocus .controls > #cancelCropBtn,
+body.additionalSectionFocus .controls > #batchResizeBtn,
+body.additionalSectionFocus .controls > .batchList,
+body.additionalSectionFocus .controls > .progressWrap,
+body.additionalSectionFocus .controls > .beforeAfter,
+body.additionalSectionFocus .controls > .download,
+body.additionalSectionFocus .controls > .pdfDownload{display:none !important;}
+body.additionalSectionFocus .controls > #resizeBtn{display:block !important;}
 /* Crop Image and every crop-related control must stay hidden in Additional focus mode. */
 body.additionalSectionFocus #cropStartBtn,
 body.additionalSectionFocus #applyCropBtn,
@@ -913,9 +914,9 @@ body.additionalSectionFocus .cancelCrop{display:none !important;}
 </style>
 <style id='advanced-sections-collapse-css'>
 .collapsibleSection{position:relative;}
-.collapsibleSection &gt; .sectionTitle{cursor:pointer;user-select:none;display:block;}
-.collapsibleSection &gt; .sectionTitle:hover{opacity:.92;}
-.collapsibleSection.is-collapsed &gt; *:not(.sectionTitle){display:none !important;}
+.collapsibleSection > .sectionTitle{cursor:pointer;user-select:none;display:block;}
+.collapsibleSection > .sectionTitle:hover{opacity:.92;}
+.collapsibleSection.is-collapsed > *:not(.sectionTitle){display:none !important;}
 </style>
 <style id='upload-only-screen-css'>
 /* BEFORE IMAGE UPLOAD: ONLY TWO UPLOAD SESSIONS FILL THE ENTIRE SCREEN. */
@@ -931,7 +932,7 @@ body.uploadOnlyMode {
 body.uploadOnlyMode {
   display:block !important;
 }
-body.uploadOnlyMode &gt; *:not(.container) {
+body.uploadOnlyMode > *:not(.container) {
   display:none !important;
 }
 body.uploadOnlyMode .container {
@@ -957,7 +958,7 @@ body.uploadOnlyMode .container {
   align-items:stretch !important;
   justify-items:stretch !important;
 }
-body.uploadOnlyMode .container &gt; *:not(#singleUploadLabel):not(#multiUploadLabel):not(#fileInput):not(#multiFileInput):not(#pdfToImageTool) {
+body.uploadOnlyMode .container > *:not(#singleUploadLabel):not(#multiUploadLabel):not(#fileInput):not(#multiFileInput):not(#pdfToImageTool) {
   display:none !important;
 }
 body.uploadOnlyMode #singleUploadLabel,
@@ -1018,7 +1019,7 @@ body.uploadOnlyMode #multiFileInput {
 .additionalToolsGroup{display:none;}
 .additionalToolsGroup.show{display:block;}
 /* Accordion titles remain visually identical; only cursor/interaction is enhanced. */
-.additionalToolsGroup .collapsibleSection &gt; .sectionTitle{
+.additionalToolsGroup .collapsibleSection > .sectionTitle{
   cursor:pointer;
 }
 
@@ -1747,7 +1748,7 @@ Upload an image to start.
 <script src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'></script><script src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'></script>
 
 <script type='text/javascript'>
-
+//
 
 (function () {
 
@@ -2660,9 +2661,9 @@ function escapeHTML(text) {
 
 return String(text)
 .replace(/&/g,'&amp;')
-.replace(/</g,'&lt;')
-.replace(/>/g,'&gt;')
-.replace(/"/g,'&quot;')
+.replace(/</g,'<')
+.replace(/>/g,'>')
+.replace(/"/g,'"')
 .replace(/'/g,'&#039;');
 
 }
@@ -5256,8 +5257,11 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape'&&cropArea.style.display==='block'){cancelCropBtn.click();}
 });
 
-
+//
 </script>
+
+
+
 <!-- ADVANCED PLUS ADD-ON: additive only; preserves existing design and functions -->
 <style id='advanced-plus-css'>
 .apBox{margin-top:12px;padding:12px;background:rgba(255,255,255,.05);border-radius:10px}
@@ -5487,7 +5491,7 @@ plusBtn.onclick=function(){q('superStudio').querySelectorAll('.studioTab').forEa
 }
 .moreToolsStaticLinks a:hover{opacity:.78 !important;transform:translateX(2px) !important}
 .moreToolsChevron{font-size:18px;line-height:1;transition:transform .2s ease}
-.moreToolsTrigger[aria-expanded=&#39;true&#39;] .moreToolsChevron{transform:rotate(180deg)}
+.moreToolsTrigger[aria-expanded='true'] .moreToolsChevron{transform:rotate(180deg)}
 .moreToolsPanel{
   display:none;
   position:absolute;
@@ -5546,106 +5550,106 @@ plusBtn.onclick=function(){q('superStudio').querySelectorAll('.studioTab').forEa
 </style>
 <script>
 (function(){
-  var trigger=document.getElementById(&#39;moreToolsTrigger&#39;);
-  var panel=document.getElementById(&#39;moreToolsPanel&#39;);
+  var trigger=document.getElementById('moreToolsTrigger');
+  var panel=document.getElementById('moreToolsPanel');
   if(!trigger || !panel) return;
 
   function closeMenu(){
-    panel.style.display=&#39;none&#39;;
-    trigger.setAttribute(&#39;aria-expanded&#39;,&#39;false&#39;);
+    panel.style.display='none';
+    trigger.setAttribute('aria-expanded','false');
   }
 
-  trigger.addEventListener(&#39;click&#39;,function(e){
+  trigger.addEventListener('click',function(e){
     e.stopPropagation();
-    var open=trigger.getAttribute(&#39;aria-expanded&#39;)===&#39;true&#39;;
+    var open=trigger.getAttribute('aria-expanded')==='true';
     if(open){closeMenu();}
-    else{panel.style.display=&#39;block&#39;;trigger.setAttribute(&#39;aria-expanded&#39;,&#39;true&#39;);}
+    else{panel.style.display='block';trigger.setAttribute('aria-expanded','true');}
   });
 
-  panel.addEventListener(&#39;click&#39;,function(e){e.stopPropagation()});
-  document.addEventListener(&#39;click&#39;,closeMenu);
-  document.addEventListener(&#39;keydown&#39;,function(e){if(e.key===&#39;Escape&#39;) closeMenu();});
+  panel.addEventListener('click',function(e){e.stopPropagation()});
+  document.addEventListener('click',closeMenu);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape') closeMenu();});
 })();
 </script>
 
 <style id='bottom-utility-theme-css'>
 /* Bottom utility controls: functional System theme without altering the original dark design. */
-html[data-theme=&#39;light&#39;] body,
-html[data-theme=&#39;light&#39;] .container{
+html[data-theme='light'] body,
+html[data-theme='light'] .container{
   color:#1f2937;
 }
-html[data-theme=&#39;light&#39;] body{
+html[data-theme='light'] body{
   background:linear-gradient(135deg,#eef6ff,#f5f3ff) !important;
 }
-html[data-theme=&#39;light&#39;] .container{
+html[data-theme='light'] .container{
   background:rgba(255,255,255,.82) !important;
   box-shadow:0 20px 50px rgba(0,0,0,.14);
 }
-html[data-theme=&#39;light&#39;] h1,
-html[data-theme=&#39;light&#39;] .proFeatureBox,
-html[data-theme=&#39;light&#39;] .box,
-html[data-theme=&#39;light&#39;] label{
+html[data-theme='light'] h1,
+html[data-theme='light'] .proFeatureBox,
+html[data-theme='light'] .box,
+html[data-theme='light'] label{
   color:#1f2937;
 }
-html[data-theme=&#39;light&#39;] .subtitle,
-html[data-theme=&#39;light&#39;] .qualityLabels,
-html[data-theme=&#39;light&#39;] .qualityDescription,
-html[data-theme=&#39;light&#39;] .studioSub,
-html[data-theme=&#39;light&#39;] .studioStatus,
-html[data-theme=&#39;light&#39;] .aiStatus,
-html[data-theme=&#39;light&#39;] .batchBgToolsNote{
+html[data-theme='light'] .subtitle,
+html[data-theme='light'] .qualityLabels,
+html[data-theme='light'] .qualityDescription,
+html[data-theme='light'] .studioSub,
+html[data-theme='light'] .studioStatus,
+html[data-theme='light'] .aiStatus,
+html[data-theme='light'] .batchBgToolsNote{
   color:#475569 !important;
 }
-html[data-theme=&#39;light&#39;] .proFeatureBox,
-html[data-theme=&#39;light&#39;] .box,
-html[data-theme=&#39;light&#39;] .batchList,
-html[data-theme=&#39;light&#39;] .batchResultItem,
-html[data-theme=&#39;light&#39;] .superStudio{
+html[data-theme='light'] .proFeatureBox,
+html[data-theme='light'] .box,
+html[data-theme='light'] .batchList,
+html[data-theme='light'] .batchResultItem,
+html[data-theme='light'] .superStudio{
   background:rgba(255,255,255,.58) !important;
 }
-html[data-theme=&#39;light&#39;] input:not([type=&#39;range&#39;]):not([type=&#39;color&#39;]),
-html[data-theme=&#39;light&#39;] select{
+html[data-theme='light'] input:not([type='range']):not([type='color']),
+html[data-theme='light'] select{
   background:#fff;
   color:#1f2937;
 }
-html[data-theme=&#39;light&#39;] .studioCanvasWrap{
+html[data-theme='light'] .studioCanvasWrap{
   background:rgba(15,23,42,.88);
   color:#fff;
 }
 /* System = follow the device/browser preference. */
 @media (prefers-color-scheme: light){
-  html:not([data-theme=&#39;dark&#39;]) body{
+  html:not([data-theme='dark']) body{
     color:#1f2937;
     background:linear-gradient(135deg,#eef6ff,#f5f3ff) !important;
   }
-  html:not([data-theme=&#39;dark&#39;]) .container{
+  html:not([data-theme='dark']) .container{
     background:rgba(255,255,255,.82) !important;
     box-shadow:0 20px 50px rgba(0,0,0,.14);
   }
-  html:not([data-theme=&#39;dark&#39;]) h1,
-  html:not([data-theme=&#39;dark&#39;]) .proFeatureBox,
-  html:not([data-theme=&#39;dark&#39;]) .box,
-  html:not([data-theme=&#39;dark&#39;]) label{
+  html:not([data-theme='dark']) h1,
+  html:not([data-theme='dark']) .proFeatureBox,
+  html:not([data-theme='dark']) .box,
+  html:not([data-theme='dark']) label{
     color:#1f2937;
   }
-  html:not([data-theme=&#39;dark&#39;]) .subtitle,
-  html:not([data-theme=&#39;dark&#39;]) .qualityLabels,
-  html:not([data-theme=&#39;dark&#39;]) .qualityDescription,
-  html:not([data-theme=&#39;dark&#39;]) .studioSub,
-  html:not([data-theme=&#39;dark&#39;]) .studioStatus,
-  html:not([data-theme=&#39;dark&#39;]) .aiStatus,
-  html:not([data-theme=&#39;dark&#39;]) .batchBgToolsNote{
+  html:not([data-theme='dark']) .subtitle,
+  html:not([data-theme='dark']) .qualityLabels,
+  html:not([data-theme='dark']) .qualityDescription,
+  html:not([data-theme='dark']) .studioSub,
+  html:not([data-theme='dark']) .studioStatus,
+  html:not([data-theme='dark']) .aiStatus,
+  html:not([data-theme='dark']) .batchBgToolsNote{
     color:#475569 !important;
   }
-  html:not([data-theme=&#39;dark&#39;]) .proFeatureBox,
-  html:not([data-theme=&#39;dark&#39;]) .box,
-  html:not([data-theme=&#39;dark&#39;]) .batchList,
-  html:not([data-theme=&#39;dark&#39;]) .batchResultItem,
-  html:not([data-theme=&#39;dark&#39;]) .superStudio{
+  html:not([data-theme='dark']) .proFeatureBox,
+  html:not([data-theme='dark']) .box,
+  html:not([data-theme='dark']) .batchList,
+  html:not([data-theme='dark']) .batchResultItem,
+  html:not([data-theme='dark']) .superStudio{
     background:rgba(255,255,255,.58) !important;
   }
-  html:not([data-theme=&#39;dark&#39;]) input:not([type=&#39;range&#39;]):not([type=&#39;color&#39;]),
-  html:not([data-theme=&#39;dark&#39;]) select{
+  html:not([data-theme='dark']) input:not([type='range']):not([type='color']),
+  html:not([data-theme='dark']) select{
     background:#fff;
     color:#1f2937;
   }
@@ -5681,8 +5685,8 @@ html[data-theme=&#39;light&#39;] .studioCanvasWrap{
 .utilityMenu.show{display:block}
 .utilityMenu button{width:100%!important;margin:0!important;padding:9px 10px!important;background:transparent!important;color:#222!important;text-align:left!important;font-size:13px!important;border-radius:6px!important}
 .utilityMenu button:hover{background:#eef2f7!important}
-html[data-theme=&#39;dark&#39;] .utilityMenu{background:#1f2937;color:#fff}
-html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
+html[data-theme='dark'] .utilityMenu{background:#1f2937;color:#fff}
+html[data-theme='dark'] .utilityMenu button{color:#fff!important}
 @media(max-width:600px){.bottomUtilityBar{padding:22px 16px;flex-direction:column;align-items:stretch}.bottomCopyright{white-space:normal;text-align:center}.bottomUtilityActions{justify-content:center}}
 </style>
 
@@ -5763,7 +5767,7 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
 
 
 <script type='text/javascript'>
-
+//
 (function(){
   'use strict';
 
@@ -6095,7 +6099,7 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
 
   document.addEventListener('click',closeMenus);
 })();
- 
+ //
 </script>
 <!-- SESSION AUTH PATCH:
      Firebase login survives page reloads in the current browser session/tab.
@@ -6105,7 +6109,7 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
 <script src='https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js' type='text/javascript'></script>
 <script src='https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js' type='text/javascript'></script>
 <script type='text/javascript'>
-
+//
 (function(){
   'use strict';
 
@@ -6216,6 +6220,9 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
       'auth/invalid-credential':'Email or password is incorrect.',
       'auth/popup-closed-by-user':'Google sign-in was cancelled.',
       'auth/popup-blocked':'Your browser blocked the sign-in popup. Please allow popups and try again.',
+      'auth/cancelled-popup-request':'Another Google sign-in window is already open.',
+      'auth/operation-not-supported-in-this-environment':'Google Sign-In requires the website to run on http:// or https:// with web storage enabled.',
+      'auth/unauthorized-domain':'This website domain is not authorized in Firebase. Add the current domain in Firebase Authentication > Settings > Authorized domains.',
       'auth/too-many-requests':'Too many attempts. Please wait and try again.',
       'auth/network-request-failed':'Network error. Please check your internet connection.'
     };
@@ -6392,22 +6399,99 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
     });
   }
 
+  /*
+   * GOOGLE SIGN-IN ENVIRONMENT FIX
+   * ------------------------------------------------------------
+   * Firebase Web Authentication cannot run from a file:// URL.
+   * GitHub Pages/normal hosting uses https:// and is supported.
+   * Keep the existing UI and popup flow, but:
+   *   1) give a clear message when the HTML is opened locally;
+   *   2) use signInWithRedirect as a fallback when the popup is
+   *      blocked by the browser;
+   *   3) handle the Firebase redirect result after returning.
+   */
+  function firebaseWebEnvironmentOK(){
+    var protocol=String(window.location.protocol||'').toLowerCase();
+    return protocol==='http:' || protocol==='https:';
+  }
+
+  function storageAvailable(){
+    try{
+      var key='__resizeimage_arnc_storage_test__';
+      window.localStorage.setItem(key,'1');
+      window.localStorage.removeItem(key);
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  function googleSignInRedirect(){
+    var provider=new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({prompt:'select_account'});
+    return auth.signInWithRedirect(provider);
+  }
+
   if(googleBtn){
     googleBtn.addEventListener('click',function(){
       if(!configured || !auth){
         status('Add your Firebase CONFIG first, then Google Sign-In will work.');
         return;
       }
+
+      if(!firebaseWebEnvironmentOK()){
+        status('❌ Google Sign-In needs a hosted website. Open ResizeImage.ARnc from your GitHub Pages https:// address, not a downloaded file (file://).');
+        return;
+      }
+
+      if(!storageAvailable()){
+        status('❌ Browser web storage is blocked. Enable cookies/site data for this website, then try again.');
+        return;
+      }
+
       googleBtn.disabled=true;
       status('Opening Google sign-in...');
+
       var provider=new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({prompt:'select_account'});
+
       auth.signInWithPopup(provider).then(function(){
         closeModal();
       }).catch(function(err){
+        var code=(err&&err.code)||'';
+
+        if(code==='auth/popup-blocked' || code==='auth/cancelled-popup-request'){
+          status('Popup blocked. Redirecting to Google sign-in...');
+          googleSignInRedirect().catch(function(redirectErr){
+            status(friendlyError(redirectErr));
+            googleBtn.disabled=false;
+          });
+          return;
+        }
+
+        if(code==='auth/operation-not-supported-in-this-environment'){
+          status('❌ This page is not running in a supported web environment. Please open the GitHub Pages https:// website.');
+          googleBtn.disabled=false;
+          return;
+        }
+
         status(friendlyError(err));
-      }).finally(function(){
         googleBtn.disabled=false;
       });
+    });
+  }
+
+  /* Complete Google sign-in when Firebase redirects back to this page. */
+  if(auth && typeof auth.getRedirectResult==='function'){
+    auth.getRedirectResult().then(function(result){
+      if(result && result.user){
+        closeModal();
+        status('Signed in successfully with Google.');
+      }
+    }).catch(function(err){
+      if(err && err.code){
+        status(friendlyError(err));
+      }
     });
   }
 
@@ -6495,11 +6579,11 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
     }
   }
 })();
-
+//
 </script>
 
 <script type='text/javascript'>
-
+//
 (function(){
   'use strict';
   var buttons=document.querySelectorAll('.authPasswordToggle');
@@ -6521,11 +6605,11 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
     });
   }
 })();
-
+//
 </script>
 
 <script type='text/javascript'>
-
+//
 (function(){
   var toggle=document.getElementById('footerOptionalToggle');
   var content=document.getElementById('footerOptionalContent');
@@ -6540,7 +6624,7 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
   toggle.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();setOpen(content.style.display!=='block');}},false);
   setOpen(false);
 })();
-
+//
 </script>
 
 <style id='image-editor-convert-addon-css'>
@@ -6561,7 +6645,7 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
 </style>
 
 <script type='text/javascript'>
-
+//
 /* === Image Editor + Advanced Editor + Convert add-on ===
    Additive module: keeps the existing website handlers intact. */
 (function(){
@@ -7057,7 +7141,7 @@ aeRender();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);else bind();
 })();
-
+//
 </script>
 
 
@@ -7167,7 +7251,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 
 <script type='text/javascript'>
-
+//
 (function(){
   'use strict';
   var pdfInput=document.getElementById('pdfToImageInput');
@@ -7343,7 +7427,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     finally{pdfZipBtn.disabled=false;}
   });
 })();
-
+//
 </script>
 </body>
 </html>
