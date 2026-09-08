@@ -680,8 +680,38 @@ input[type=range]{
 }
 
 @media(max-width:650px){
+  /* Keep Image Studio / Privacy / Theme visible in portrait mode */
+  .nav{
+    min-height:58px;
+    padding:8px 10px;
+    gap:6px;
+    width:100%;
+  }
+
+  .logo{
+    font-size:16px;
+    letter-spacing:-.3px;
+    flex:0 0 auto;
+  }
+
   .nav-links{
-    display:none;
+    display:flex !important;
+    flex:1 1 auto;
+    min-width:0;
+    justify-content:flex-end;
+    align-items:center;
+    gap:4px;
+    overflow:visible;
+  }
+
+  .nav-btn{
+    flex:0 1 auto;
+    min-width:0;
+    padding:7px 6px;
+    border-radius:8px;
+    font-size:11px;
+    line-height:1.2;
+    white-space:nowrap;
   }
 
   .hero{
@@ -719,6 +749,28 @@ input[type=range]{
 
   .actions button{
     flex:1 1 45%;
+  }
+}
+
+/* Extra-small portrait phones */
+@media(max-width:360px){
+  .nav{
+    padding-left:7px;
+    padding-right:7px;
+    gap:3px;
+  }
+
+  .logo{
+    font-size:14px;
+  }
+
+  .nav-links{
+    gap:2px;
+  }
+
+  .nav-btn{
+    padding:6px 4px;
+    font-size:10px;
   }
 }
 /* AI BACKGROUND REMOVAL */
