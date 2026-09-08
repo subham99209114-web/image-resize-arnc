@@ -4107,85 +4107,49 @@ function batchApplyImageToIndex(index,bg){
    The resulting alpha mask is then scaled back onto the original canvas.
    This reduces processing time while preserving the original image detail.
 */
-var __bgRemovalModulePromise=null;
-function getBgRemovalModule(){
-  if(!__bgRemovalModulePromise){
-    __bgRemovalModulePromise=import('https://esm.sh/@imgly/background-removal@1.7.0')
-      .then(function(mod){
-        var fn=mod.default||mod.removeBackground;
-        if(typeof fn!=='function')throw new Error('AI module unavailable');
-        return fn;
-      })
-      .catch(function(err){ __bgRemovalModulePromise=null; throw err; });
-  }
-  return __bgRemovalModulePromise;
-}
-function imageToSmartDataURL(img,maxSide){
-  var w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
-  var scale=Math.min(1,maxSide/Math.max(w,h));
-  if(scale>=1)return {src:img.src,width:w,height:h,scale:1};
-  var c=document.createElement('canvas');
-  c.width=Math.max(1,Math.round(w*scale));
-  c.height=Math.max(1,Math.round(h*scale));
-  var x=c.getContext('2d');
-  x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';
-  x.drawImage(img,0,0,c.width,c.height);
-  return {src:c.toDataURL('image/jpeg',0.96),width:w,height:h,scale:scale};
-}
+/* Secure server-side background-removal engine.
+   The browser NEVER receives the remove.bg API key. It uploads the image to
+   your own backend endpoint, and the backend talks to remove.bg securely.
+   Set window.BG_REMOVE_API_URL before this code when frontend/backend are on
+   different domains; otherwise the same-origin /api/remove-background path
+   is used automatically.
+*/
+var BG_REMOVE_API_URL=(window.BG_REMOVE_API_URL||'/api/remove-background').replace(/\/$/,'');
 async function runProfessionalBgRemoval(img,onProgress){
-  var maxSide=2200;
-  var smart=imageToSmartDataURL(img,maxSide);
-  var aiRemove=await getBgRemovalModule();
-  var opts={
-    model:'isnet',
-    device:'gpu',
-    proxyToWorker:true,
-    output:{format:'image/png',quality:1},
-    progress:function(key,current,total){
-      var pct=total?Math.round(current/total*100):0;
-      if(onProgress)onProgress(pct,key,current,total);
+  if(!img)throw new Error('No image selected');
+  var blob=await new Promise(function(resolve,reject){
+    try{
+      var c=document.createElement('canvas');
+      var w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
+      if(!w||!h){reject(new Error('Invalid image dimensions'));return;}
+      c.width=w;c.height=h;
+      var x=c.getContext('2d');
+      x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';
+      x.drawImage(img,0,0,w,h);
+      c.toBlob(function(b){b?resolve(b):reject(new Error('Could not prepare image'));},'image/png');
+    }catch(e){reject(e);}
+  });
+  var form=new FormData();
+  form.append('image',blob,'image.png');
+  if(onProgress)onProgress(8,'uploading');
+  var controller=new AbortController();
+  var timeout=setTimeout(function(){controller.abort();},90000);
+  try{
+    var response=await fetch(BG_REMOVE_API_URL,{method:'POST',body:form,signal:controller.signal,credentials:'include'});
+    if(onProgress)onProgress(88,'processing');
+    if(!response.ok){
+      var message='Background removal server error ('+response.status+')';
+      try{var err=await response.json();if(err&&err.error)message=err.error;}catch(e){}
+      throw new Error(message);
     }
-  };
-  var blob;
-  try{
-    blob=await aiRemove(smart.src,opts);
-  }catch(gpuErr){
-    /* Some browsers/devices expose WebGPU but cannot execute this model.
-       Retry on CPU instead of failing the user's Background Remove button. */
-    console.warn('WebGPU background removal failed; retrying on CPU.',gpuErr);
-    opts.device='cpu';
-    blob=await aiRemove(smart.src,opts);
-  }
-  if(!blob)throw new Error('AI returned an empty result');
-
-  /* If AI already processed at native size, return its PNG directly. */
-  if(smart.scale===1)return blob;
-
-  /* Build a full-resolution PNG using ORIGINAL RGB pixels + AI alpha mask. */
-  var maskUrl=URL.createObjectURL(blob);
-  try{
-    var mask=await new Promise(function(resolve,reject){
-      var im=new Image();
-      im.onload=function(){resolve(im);};
-      im.onerror=function(){reject(new Error('AI mask could not be decoded'));};
-      im.src=maskUrl;
-    });
-    var w=smart.width,h=smart.height;
-    var out=document.createElement('canvas');out.width=w;out.height=h;
-    var ox=out.getContext('2d');
-    ox.imageSmoothingEnabled=true;ox.imageSmoothingQuality='high';
-    ox.drawImage(img,0,0,w,h);
-    var alpha=document.createElement('canvas');alpha.width=w;alpha.height=h;
-    var ax=alpha.getContext('2d');
-    ax.imageSmoothingEnabled=true;ax.imageSmoothingQuality='high';
-    ax.drawImage(mask,0,0,w,h);
-    ox.globalCompositeOperation='destination-in';
-    ox.drawImage(alpha,0,0,w,h);
-    ox.globalCompositeOperation='source-over';
-    return await new Promise(function(resolve,reject){
-      out.toBlob(function(b){b?resolve(b):reject(new Error('PNG export failed'));},'image/png');
-    });
-  }finally{URL.revokeObjectURL(maskUrl);}
+    var result=await response.blob();
+    if(!result||!result.size)throw new Error('Server returned an empty image');
+    if(onProgress)onProgress(100,'complete');
+    return result;
+  }catch(err){
+    if(err&&err.name==='AbortError')throw new Error('Background removal timed out. Please try again.');
+    throw err;
+  }finally{clearTimeout(timeout);}
 }
 
 async function batchRemoveBackgroundIndex(index){
@@ -4213,7 +4177,7 @@ async function batchRemoveBackgroundIndex(index){
       var blob=await runProfessionalBgRemoval(item.image,function(pct){
         if(progressBar)progressBar.style.width=Math.max(0,Math.min(100,pct))+'%';
         if(progressText)progressText.textContent='AI background removal: image '+(index+1)+' / '+batchImages.length+' — '+pct+'%';
-        setBatchBgStatus('🤖 AI background removal: image '+(index+1)+' / '+batchImages.length+' — '+pct+'%');
+        setBatchBgStatus('🤖 Professional background removal: image '+(index+1)+' / '+batchImages.length+' — '+pct+'%');
       });
 
       if(!blob)throw new Error('AI returned an empty result');
@@ -4896,7 +4860,7 @@ if(applyBgMarksBtn){
 async function removeBackgroundLocal(){
   if(!originalImage){setBackgroundStatus('Upload an image first.');return;}
   try{
-    setBackgroundStatus('🤖 AI is detecting the subject automatically — same clean cutout style as the video.');
+    setBackgroundStatus('🤖 Professional server AI is removing the background...');
     if(progressWrap) progressWrap.style.display='block';
     if(progressBar) progressBar.style.width='0%';
     if(progressText) progressText.textContent='AI background removal: detecting subject (people / animals / objects)...';
@@ -4904,7 +4868,7 @@ async function removeBackgroundLocal(){
     var blob=await runProfessionalBgRemoval(originalImage,function(pct){
       if(progressBar) progressBar.style.width=Math.max(0,Math.min(100,pct))+'%';
       if(progressText) progressText.textContent='AI background removal: '+pct+'%';
-      setBackgroundStatus('🤖 AI background removal: protecting foreground subject (including animals)... '+pct+'%');
+      setBackgroundStatus('🤖 Professional background removal: '+pct+'%');
     });
 
     /* IMPORTANT: keep the AI PNG alpha channel intact.
@@ -4934,7 +4898,7 @@ async function removeBackgroundLocal(){
 
         if(progressBar)progressBar.style.width='100%';
         if(progressText)progressText.textContent='AI background removal: complete';
-        setBackgroundStatus('✅ Background removed cleanly like the video. Transparent PNG ready.');
+        setBackgroundStatus('✅ Professional background removal complete. Transparent PNG ready.');
         try{document.dispatchEvent(new CustomEvent('proStudioBackgroundChanged'));}catch(e){}
         info.innerHTML='AI background removal applied<br/>'+w+' × '+h+' px<br/><b>Clean transparent cutout — people / animals / objects preserved</b>';
         if(progressWrap)setTimeout(function(){progressWrap.style.display='none';},900);
@@ -4954,7 +4918,7 @@ async function removeBackgroundLocal(){
   }catch(err){
     console.error('AI background removal error:',err);
     if(progressWrap)progressWrap.style.display='none';
-    setBackgroundStatus('⚠️ AI model could not load. Please check your internet connection and try again.');
+    setBackgroundStatus('⚠️ Professional background-removal server is unavailable. Please check your backend URL and try again.');
   }
 }
 
