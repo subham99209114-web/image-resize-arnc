@@ -1,6 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE html>
-<html xmlns='http://www.w3.org/1999/xhtml' xmlns:b='http://www.google.com/2005/gml/b' xmlns:data='http://www.google.com/2005/gml/data' xmlns:expr='http://www.google.com/2005/gml/expr'>
+<html>
 
 <head>
 <title>ResizeImage.ARnc</title>
@@ -10,9 +9,10 @@
 <meta property='og:title' content='ResizeImage.ARnc'/>
 <meta property='og:site_name' content='ResizeImage.ARnc'/>
 <meta name='twitter:title' content='ResizeImage.ARnc'/>
-<link expr:href='data:blog.canonicalUrl' rel='canonical'/>
+<link rel='canonical' href='' id='standaloneCanonical'/>
+<script>document.getElementById('standaloneCanonical').href=window.location.href.split('#')[0];</script>
 <meta content='wxhUml4BEJws6rWVL4hBZl7jGahw8_eljlfihQ9DSWs' name='google-site-verification'/>
-<b:skin><![CDATA[
+<style id='blogger-skin'>
 
 * {
   box-sizing: border-box;
@@ -517,7 +517,7 @@ button:disabled {
 
 
 .proFeatureBox{grid-column:1/-1;background:rgba(0,0,0,.20);padding:15px;border-radius:12px}.featureGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.featureActions,.batchTools{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.featureActions button,.batchTools button{margin-top:0;padding:10px;font-size:13px}.presetRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dropActive{outline:3px solid #22c55e;background:rgba(34,197,94,.15)!important}.progressWrap{display:none;margin-top:15px;background:rgba(0,0,0,.25);padding:12px;border-radius:10px}.progressTrack{height:12px;background:rgba(255,255,255,.15);border-radius:20px;overflow:hidden}.progressBar{height:100%;width:0;background:#22c55e;transition:width .2s}.progressText{text-align:center;margin-top:7px;font-size:13px}.beforeAfter{display:none;margin-top:20px;background:rgba(0,0,0,.22);padding:15px;border-radius:12px}.compareGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.compareCard{background:rgba(255,255,255,.07);padding:10px;border-radius:10px}.compareCard h3{text-align:center;font-size:15px}.compareCard img{width:100%;height:220px;object-fit:contain;background:#fff;border-radius:8px}.compareCard img.transparentPreview{background-color:#f8f8f8;background-image:linear-gradient(45deg,#d8d8d8 25%,transparent 25%),linear-gradient(-45deg,#d8d8d8 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#d8d8d8 75%),linear-gradient(-45deg,transparent 75%,#d8d8d8 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}.compareInfo{font-size:12px;line-height:1.7}.dashboardStats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.stat{background:rgba(255,255,255,.08);padding:9px;border-radius:8px;text-align:center;font-size:12px}.stat strong{display:block;font-size:16px}.batchItemActions{display:flex;gap:4px}.batchItemActions button{width:auto!important;margin:0!important;padding:6px 8px!important;font-size:11px!important}.aiBox{border:1px solid rgba(96,165,250,.35)}.aiBadge{background:#3b82f6;padding:3px 7px;border-radius:6px;font-size:11px}.aiStatus{font-size:12px;color:#dbeafe;margin-top:7px}.proFeatureBox input[type=range]{width:100%;accent-color:#22c55e}@media(max-width:600px){.featureGrid,.compareGrid{grid-template-columns:1fr}.featureActions,.batchTools{grid-template-columns:1fr 1fr}.dashboardStats{grid-template-columns:1fr 1fr}}
-]]></b:skin>
+</style>
 <style>
 /* FULL-SCREEN FIX &#8212; desktop + mobile */
 html, body {
@@ -1050,14 +1050,14 @@ body.auth-signed-in .signinProtectedQuickPreset{display:block !important;}
 <style id='signin-tools-final-fix'>body:not(.auth-signed-in) .signinProtectedTool,body:not(.auth-signed-in) .signinProtectedQuickPreset,body:not(.auth-signed-in) .signinProtectedPreserveQuality{display:none !important;}body.auth-signed-in .signinProtectedQuickPreset{display:block !important;}body:not(.auth-signed-in) #height,body:not(.auth-signed-in) #heightUnit{visibility:visible !important;}</style>
 <!-- ResizeImage.ARnc — Google Analytics 4 (background-only tracking; no design changes) -->
 <script async="async" src="https://www.googletagmanager.com/gtag/js?id=G-MT3BX5SKR5"></script>
-<script><![CDATA[
+<script>
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-MT3BX5SKR5', {
   send_page_view: true
 });
-]]></script>
+</script>
 </head>
 
 <body class='uploadOnlyMode'>
@@ -1068,7 +1068,7 @@ gtag('config', 'G-MT3BX5SKR5', {
     <span id='authButtonText' style='color: #00FF66;'>Sign In</span>
   </button>
   <div class='authUserMenu' id='authUserMenu'>
-    <div class='authUserEmail' id='authUserEmail'/>
+    <div class='authUserEmail' id='authUserEmail'></div>
     <button id='authAccountBtn' type='button'>Account</button>
     <button id='authLogoutBtn' type='button'>Log Out</button>
   </div>
@@ -1159,7 +1159,7 @@ No image upload is required for local image processing.
 <label style='display:block;margin-top:10px;margin-bottom:6px;'>🎚&#65039; Color Tolerance: <span id='bgToleranceValue'>48</span></label>
 <input id='bgTolerance' max='120' min='0' style='width:100%;' type='range' value='48'/>
 <div style='font-size:12px;margin-top:6px;'>🖱&#65039; Click/drag on the background. You can mark multiple separate areas.</div>
-<canvas id='bgMarkCanvas' style='display:block;width:100%;margin-top:8px;border-radius:10px;cursor:crosshair;touch-action:none;'/>
+<canvas id='bgMarkCanvas' style='display:block;width:100%;margin-top:8px;border-radius:10px;cursor:crosshair;touch-action:none;'></canvas>
 <button id='applyBgMarksBtn' style='margin-top:8px;width:100%;' type='button'>&#9989; Apply Marked Removal</button>
 <button id='cancelBgMarksBtn' style='margin-top:8px;width:100%;' type='button'>&#10060; Cancel</button>
 <button id='clearBgMarksInPanelBtn' style='margin-top:8px;width:100%;' type='button'>&#8617;&#65039; Clear Marks</button>
@@ -1206,7 +1206,7 @@ No image upload is required for local image processing.
     </div>
   </div>
   <div class='imageEditorPreviewWrap'>
-    <canvas class='imageEditorPreview' id='imageEditorCanvas'/>
+    <canvas class='imageEditorPreview' id='imageEditorCanvas'></canvas>
   </div>
   <div class='imageEditorStatus' id='imageEditorStatus'>Select an image first. All editing is done locally in your browser.</div>
   <div class='editorActions'>
@@ -1260,11 +1260,11 @@ No image upload is required for local image processing.
     <button id='aeUndoBtn' type='button'>&#8617;&#65039; Undo</button>
     <button id='aeResetBtn' type='button'>🔄 Reset</button>
   </div>
-  <div class='imageEditorPreviewWrap'><canvas class='imageEditorPreview' id='advancedEditorCanvas'/></div>
+  <div class='imageEditorPreviewWrap'><canvas class='imageEditorPreview' id='advancedEditorCanvas'></canvas></div>
   <div class='imageEditorStatus' id='advancedEditorStatus'>Select an image first. Crop, text and drawing are processed locally.</div>
   <div class='aeLayersPanel' style='margin-top:10px;padding:10px;border:1px solid rgba(128,128,128,.25);border-radius:10px;'>
     <div style='display:flex;justify-content:space-between;align-items:center;gap:8px;'><b>🗂&#65039; Text Layers</b><button id='aeDeleteLayerBtn' type='button'>🗑&#65039; Delete Selected</button></div>
-    <div id='aeLayersList' style='margin-top:8px;display:flex;flex-direction:column;gap:6px;'/>
+    <div id='aeLayersList' style='margin-top:8px;display:flex;flex-direction:column;gap:6px;'></div>
   </div>
   <div class='aeTextHint'>🔤 <b>Text:</b> choose font/style, click to place multiple texts, drag text to move, drag &#8600; to resize, drag &#10227; to rotate. Select any layer to edit it.</div>
   <div class='editorActions'><button id='aeApplyBtn' type='button'>&#9989; Apply Advanced Edits</button><button id='aeAnimatedGifBtn' type='button'>🎞️ Download Animated GIF</button>
@@ -1356,8 +1356,8 @@ No image upload is required for local image processing.
       <div class='box'><label>🎯 AI Subject Centering</label><button id='aiSubjectCenterBtn' type='button'>Center Detected Subject</button></div>
     </div>
     <div class='studioCanvasWrap' id='studioCanvasWrap'>
-      <canvas id='studioCanvas'/>
-      <canvas id='studioOverlay'/>
+      <canvas id='studioCanvas'></canvas>
+      <canvas id='studioOverlay'></canvas>
       <div class='canvasHint' id='canvasHint'>Upload an image to activate the Pro Studio canvas.</div>
     </div>
     <div class='studioToolBar'>
@@ -1409,7 +1409,7 @@ No image upload is required for local image processing.
   <div class='studioPanel' id='studioLayers'>
     <div class='layerToolbar'><button id='addImageLayerBtn' type='button'>&#65291; Image Layer</button><button id='addTextLayerBtn' type='button'>&#65291; Text Layer</button><button id='addShapeLayerBtn' type='button'>&#65291; Shape Layer</button><button id='duplicateLayerBtn' type='button'>Duplicate</button><button id='deleteLayerBtn' type='button'>Delete</button><button id='mergeLayerBtn' type='button'>Merge</button><button id='flattenLayersBtn' type='button'>Flatten</button></div>
     <div class='layerGrid'>
-      <div class='layerList' id='layerList'/>
+      <div class='layerList' id='layerList'></div>
       <div class='layerProperties'>
         <label>Layer Name<input id='layerNameInput' placeholder='Layer name' type='text'/></label>
         <label>Opacity<input id='layerOpacity' max='100' min='0' type='range' value='100'/></label>
@@ -1439,7 +1439,7 @@ No image upload is required for local image processing.
     <div class='inspectorGrid'>
       <div class='inspectorCard'><b>Resolution</b><span id='insResolution'>&#8212;</span></div><div class='inspectorCard'><b>Aspect Ratio</b><span id='insAspect'>&#8212;</span></div><div class='inspectorCard'><b>Megapixels</b><span id='insMP'>&#8212;</span></div><div class='inspectorCard'><b>File Size</b><span id='insSize'>&#8212;</span></div><div class='inspectorCard'><b>DPI</b><span id='insDPI'>&#8212;</span></div><div class='inspectorCard'><b>Color Type</b><span id='insColor'>RGB / 8-bit</span></div><div class='inspectorCard'><b>Alpha</b><span id='insAlpha'>&#8212;</span></div><div class='inspectorCard'><b>Orientation</b><span id='insOrientation'>&#8212;</span></div>
     </div>
-    <div class='scopeGrid'><div class='scopeCard'><b>RGB Histogram</b><canvas id='rgbHistogram'/></div><div class='scopeCard'><b>Luminance</b><canvas id='lumHistogram'/></div><div class='scopeCard'><b>RGB Parade</b><canvas id='rgbParade'/></div><div class='scopeCard'><b>Waveform</b><canvas id='waveformScope'/></div></div>
+    <div class='scopeGrid'><div class='scopeCard'><b>RGB Histogram</b><canvas id='rgbHistogram'></canvas></div><div class='scopeCard'><b>Luminance</b><canvas id='lumHistogram'></canvas></div><div class='scopeCard'><b>RGB Parade</b><canvas id='rgbParade'></canvas></div><div class='scopeCard'><b>Waveform</b><canvas id='waveformScope'></canvas></div></div>
     <div class='qualityAdvisor' id='qualityAdvisor'>🎯 Smart Quality Advisor: upload an image to calculate recommendations.</div>
     <div class='qualityAdvisor' id='smartRecommendations'>🧠 Smart Recommendations will appear here.</div>
     <button id='refreshInspectorBtn' type='button'>🔄 Refresh Inspector &amp; Scopes</button>
@@ -1679,7 +1679,7 @@ Next &#10145;
     <label style='display:block;margin-top:10px;margin-bottom:6px;'>🎚&#65039; Color Tolerance: <span id='batchToleranceValue'>48</span></label>
     <input id='batchTolerance' max='120' min='0' style='width:100%;' type='range' value='48'/>
     <div style='font-size:12px;margin-top:6px;'>🖱&#65039; Click/drag on the selected batch image background.</div>
-    <canvas id='batchMouseCanvas' style='display:block;width:100%;margin-top:8px;border-radius:10px;cursor:crosshair;touch-action:none;'/>
+    <canvas id='batchMouseCanvas' style='display:block;width:100%;margin-top:8px;border-radius:10px;cursor:crosshair;touch-action:none;'></canvas>
     <button id='batchApplyMouseBtn' style='margin-top:8px;width:100%;' type='button'>&#9989; Apply Marked Removal</button>
     <button id='batchCancelMouseBtn' style='margin-top:8px;width:100%;' type='button'>&#10060; Cancel</button>
     <button id='batchClearMouseBtn' style='margin-top:8px;width:100%;' type='button'>&#8617;&#65039; Clear Marks</button>
@@ -1690,7 +1690,7 @@ Next &#10145;
 </div>
 
 </div>
-<div class='progressWrap' id='progressWrap'><div class='progressTrack'><div class='progressBar' id='progressBar'/></div><div class='progressText' id='progressText'>0 / 0 &#8212; 0%</div></div><div class='beforeAfter' id='beforeAfter'><h2 style='text-align:center'>📊 Before &#8594; After Dashboard</h2><div class='compareGrid'><div class='compareCard'><h3>Original</h3><img id='beforeImage'/><div class='compareInfo' id='beforeInfo'/></div><div class='compareCard'><h3>Processed</h3><img id='afterImage'/><div class='compareInfo' id='afterInfo'/></div></div><div class='dashboardStats'><div class='stat'><strong id='savedPercent'>0%</strong>Saved</div><div class='stat'><strong id='dimensionReduced'>0%</strong>Dimension Change</div><div class='stat'><strong id='formatChange'>&#8212;</strong>Format</div></div></div><div class='preview'>
+<div class='progressWrap' id='progressWrap'><div class='progressTrack'><div class='progressBar' id='progressBar'></div></div><div class='progressText' id='progressText'>0 / 0 &#8212; 0%</div></div><div class='beforeAfter' id='beforeAfter'><h2 style='text-align:center'>📊 Before &#8594; After Dashboard</h2><div class='compareGrid'><div class='compareCard'><h3>Original</h3><img id='beforeImage'/><div class='compareInfo' id='beforeInfo'></div></div><div class='compareCard'><h3>Processed</h3><img id='afterImage'/><div class='compareInfo' id='afterInfo'></div></div></div><div class='dashboardStats'><div class='stat'><strong id='savedPercent'>0%</strong>Saved</div><div class='stat'><strong id='dimensionReduced'>0%</strong>Dimension Change</div><div class='stat'><strong id='formatChange'>&#8212;</strong>Format</div></div></div><div class='preview'>
 
 <h2>Preview</h2>
 
@@ -1744,10 +1744,10 @@ Upload an image to start.
 </div>
 
 </div>
-<script src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'/><script src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'/>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'></script><script src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'></script>
 
 <script type='text/javascript'>
-//<![CDATA[
+
 
 (function () {
 
@@ -5256,79 +5256,8 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape'&&cropArea.style.display==='block'){cancelCropBtn.click();}
 });
 
-//]]>
+
 </script>
-
-<b:section class='main' id='main' maxwidgets='1' showaddelement='yes'>
-  <b:widget id='HTML3' locked='false' title='Ads2' type='HTML' version='1'>
-    <b:widget-settings>
-      <b:widget-setting name='content'/>
-    </b:widget-settings>
-    <b:includable id='main'>
-
-<b:if cond='data:title != &quot;&quot;'>
-
-<h2>
-<data:title/>
-</h2>
-
-</b:if>
-
-<div class='widget-content'>
-<data:content/>
-</div>
-
-<b:include name='quickedit'/>
-
-</b:includable>
-  </b:widget>
-  <b:widget id='HTML2' locked='false' title='code' type='HTML' version='1'>
-    <b:widget-settings>
-      <b:widget-setting name='content'/>
-    </b:widget-settings>
-    <b:includable id='main'>
-
-<b:if cond='data:title != &quot;&quot;'>
-
-<h2>
-<data:title/>
-</h2>
-
-</b:if>
-
-<div class='widget-content'>
-<data:content/>
-</div>
-
-<b:include name='quickedit'/>
-
-</b:includable>
-  </b:widget>
-  <b:widget id='HTML1' locked='false' title='Adds' type='HTML' version='1'>
-    <b:widget-settings>
-      <b:widget-setting name='content'/>
-    </b:widget-settings>
-    <b:includable id='main'>
-
-<b:if cond='data:title != &quot;&quot;'>
-
-<h2>
-<data:title/>
-</h2>
-
-</b:if>
-
-<div class='widget-content'>
-<data:content/>
-</div>
-
-<b:include name='quickedit'/>
-
-</b:includable>
-  </b:widget>
-</b:section>
-
-
 <!-- ADVANCED PLUS ADD-ON: additive only; preserves existing design and functions -->
 <style id='advanced-plus-css'>
 .apBox{margin-top:12px;padding:12px;background:rgba(255,255,255,.05);border-radius:10px}
@@ -5338,7 +5267,7 @@ document.addEventListener('keydown',function(e){
 .apLayerItem{position:relative}.apLock{margin-left:auto!important;width:auto!important;padding:3px 6px!important;font-size:10px!important}.apLayerItem.dragging{opacity:.45}.apLayerItem.dropTarget{outline:2px dashed #22c55e}
 @media(max-width:700px){.apGrid{grid-template-columns:1fr}}
 </style>
-<script type='text/javascript'><![CDATA[
+<script type='text/javascript'>
 (function(){'use strict';
 function q(id){return document.getElementById(id)}
 function studio(){return q('superStudio')}
@@ -5406,11 +5335,11 @@ document.addEventListener('proStudioImageLoaded',function(){if(auto)q('apAutoSav
 /* tab activation for the new panel */
 plusBtn.onclick=function(){q('superStudio').querySelectorAll('.studioTab').forEach(function(a){a.classList.remove('active')});q('superStudio').querySelectorAll('.studioPanel').forEach(function(a){a.classList.remove('active')});plusBtn.classList.add('active');panel.classList.add('active')};
 })();
-]]></script>
+</script>
   
 <div id='signedInOnlySection' style='display:none;'>
 <br>
-  <h1 aria-expanded='false' class='footerOptionalToggle' id='footerOptionalToggle' role='button' tabindex='0'><b><p id='optionalFooterToggle' style='cursor:pointer;'>Optional <span id='optionalFooterArrow'/></p>
+  <h1 aria-expanded='false' class='footerOptionalToggle' id='footerOptionalToggle' role='button' tabindex='0'><b><p id='optionalFooterToggle' style='cursor:pointer;'>Optional <span id='optionalFooterArrow'></span></p>
    <p>&#8595;</p></b></h1>
 </br>
   <div class='footerOptionalContent' id='footerOptionalContent' style='display:none;'>
@@ -5798,7 +5727,7 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
     </form>
 
     <div class='authDivider'><span>SECURE ACCOUNT</span></div>
-    <div class='authStatus' id='authStatus'/>
+    <div class='authStatus' id='authStatus'></div>
     <div class='authNote'>Your image editing tools continue to run locally in your browser. Login is only for account authentication.<br/><br/>📧 <b>Email Reset:</b> sends a secure reset link to a real email inbox.<br/>🔵 <b>Google Recovery:</b> opens Google&#39;s official account recovery page for Google Sign-In accounts.</div>
   </div>
 </div>
@@ -5834,7 +5763,7 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
 
 
 <script type='text/javascript'>
-//<![CDATA[
+
 (function(){
   'use strict';
 
@@ -6166,17 +6095,17 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
 
   document.addEventListener('click',closeMenus);
 })();
- //]]>
+ 
 </script>
 <!-- SESSION AUTH PATCH:
      Firebase login survives page reloads in the current browser session/tab.
      Existing design, Firebase config, login methods and editor functions
      remain unchanged. -->
 <!-- Firebase Authentication: replace the CONFIG placeholders with your Firebase Web App config. -->
-<script src='https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js' type='text/javascript'/>
-<script src='https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js' type='text/javascript'/>
+<script src='https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js' type='text/javascript'></script>
+<script src='https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js' type='text/javascript'></script>
 <script type='text/javascript'>
-//<![CDATA[
+
 (function(){
   'use strict';
 
@@ -6288,8 +6217,7 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
       'auth/popup-closed-by-user':'Google sign-in was cancelled.',
       'auth/popup-blocked':'Your browser blocked the sign-in popup. Please allow popups and try again.',
       'auth/too-many-requests':'Too many attempts. Please wait and try again.',
-      'auth/network-request-failed':'Network error. Please check your internet connection.',
-      'auth/operation-not-supported-in-this-environment':'Google Sign-In requires HTTPS, HTTP localhost, or a supported browser environment. A file:// page is not supported.'
+      'auth/network-request-failed':'Network error. Please check your internet connection.'
     };
     return map[code] || (err&&err.message ? err.message : 'Authentication failed. Please try again.');
   }
@@ -6471,26 +6399,11 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
         return;
       }
       googleBtn.disabled=true;
-
-      /* Firebase Auth cannot run Google OAuth from file:// pages. */
-      if(window.location.protocol==='file:'){
-        status('Google Sign-In needs HTTPS, Blogger, or http://localhost. A file:// page is not supported.');
-        googleBtn.disabled=false;
-        return;
-      }
-
       status('Opening Google sign-in...');
       var provider=new firebase.auth.GoogleAuthProvider();
-
-      /* Use popup first; fall back to redirect if the popup is blocked. */
       auth.signInWithPopup(provider).then(function(){
         closeModal();
       }).catch(function(err){
-        var code=(err&&err.code)||'';
-        if(code==='auth/popup-blocked'){
-          status('Popup blocked. Redirecting to Google sign-in...');
-          return auth.signInWithRedirect(provider);
-        }
         status(friendlyError(err));
       }).finally(function(){
         googleBtn.disabled=false;
@@ -6582,11 +6495,11 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
     }
   }
 })();
-//]]>
+
 </script>
 
 <script type='text/javascript'>
-//<![CDATA[
+
 (function(){
   'use strict';
   var buttons=document.querySelectorAll('.authPasswordToggle');
@@ -6608,11 +6521,11 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
     });
   }
 })();
-//]]>
+
 </script>
 
 <script type='text/javascript'>
-//<![CDATA[
+
 (function(){
   var toggle=document.getElementById('footerOptionalToggle');
   var content=document.getElementById('footerOptionalContent');
@@ -6627,7 +6540,7 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
   toggle.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();setOpen(content.style.display!=='block');}},false);
   setOpen(false);
 })();
-//]]>
+
 </script>
 
 <style id='image-editor-convert-addon-css'>
@@ -6648,7 +6561,7 @@ html[data-theme=&#39;dark&#39;] .utilityMenu button{color:#fff!important}
 </style>
 
 <script type='text/javascript'>
-//<![CDATA[
+
 /* === Image Editor + Advanced Editor + Convert add-on ===
    Additive module: keeps the existing website handlers intact. */
 (function(){
@@ -7144,12 +7057,12 @@ aeRender();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);else bind();
 })();
-//]]>
+
 </script>
 
 
 <!-- ResizeImage.ARnc — Non-invasive Analytics Event Tracking -->
-<script><![CDATA[
+<script>
 (function () {
   'use strict';
 
@@ -7251,10 +7164,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     } catch (e) {}
   }, false);
 })();
-]]></script>
+</script>
 
 <script type='text/javascript'>
-//<![CDATA[
+
 (function(){
   'use strict';
   var pdfInput=document.getElementById('pdfToImageInput');
@@ -7430,7 +7343,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     finally{pdfZipBtn.disabled=false;}
   });
 })();
-//]]>
+
 </script>
 </body>
 </html>
