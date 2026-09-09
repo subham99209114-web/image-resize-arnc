@@ -1060,6 +1060,10 @@ gtag('config', 'G-MT3BX5SKR5', {
   send_page_view: true
 });
 </script>
+<script>
+window.BG_REMOVE_API_URL =
+  "https://arnc-background-remove-backend.onrender.com/api/remove-background";
+</script>
 </head>
 
 <body class='uploadOnlyMode'>
@@ -4114,10 +4118,6 @@ function batchApplyImageToIndex(index,bg){
    different domains; otherwise the same-origin /api/remove-background path
    is used automatically.
 */
-<script>
-window.BG_REMOVE_API_URL =
-  "https://arnc-background-remove-backend.onrender.com/api/remove-background";
-</script>    
 var BG_REMOVE_API_URL=(window.BG_REMOVE_API_URL||'/api/remove-background').replace(/\/$/,'');
 async function runProfessionalBgRemoval(img,onProgress){
   if(!img)throw new Error('No image selected');
