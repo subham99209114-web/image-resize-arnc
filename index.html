@@ -4365,7 +4365,13 @@ async function batchRemoveBackgroundIndex(index){
       if(!source)throw new Error('Batch image source is empty');
 
       var blob=await aiRemove(source,{
-        model:'medium',
+        /* FAST MODE:
+           Use the quantized small model + GPU when available.
+           This keeps the same transparent-PNG result and all existing UI/functions,
+           while reducing model size and inference work. */
+        model:'small',
+        device:(navigator.gpu?'gpu':'cpu'),
+        proxyToWorker:true,
         progress:function(key,current,total){
           var pct=total?Math.round(current/total*100):0;
           if(progressBar)progressBar.style.width=Math.max(0,Math.min(100,pct))+'%';
@@ -4425,7 +4431,7 @@ async function batchRemoveBackgroundAll(){
         console.error('Skipping failed batch image '+(i+1),err);
       }
       setProgress(i+1,batchImages.length);
-      await new Promise(function(resolve){setTimeout(resolve,30);});
+      await new Promise(function(resolve){setTimeout(resolve,0);});
     }
     renderBatchList();
     setBatchBgStatus('✅ Background removal finished for all selected images.');
@@ -5064,9 +5070,12 @@ async function removeBackgroundLocal(){
     if(typeof aiRemove!=='function') throw new Error('AI module unavailable');
 
     var blob=await aiRemove(originalImage.src,{
-      /* Use the higher-quality general foreground model. It is not human-only,
-         so animals, pets, products and other foreground subjects are preserved. */
-      model:'medium',
+      /* FAST MODE:
+         Small quantized model is used for much faster browser-side inference.
+         It remains a general foreground model for people, animals and objects. */
+      model:'small',
+      device:(navigator.gpu?'gpu':'cpu'),
+      proxyToWorker:true,
       progress:function(key,current,total){
         var pct=total?Math.round(current/total*100):0;
         if(progressBar) progressBar.style.width=Math.max(0,Math.min(100,pct))+'%';
