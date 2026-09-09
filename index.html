@@ -1060,6 +1060,243 @@ gtag('config', 'G-MT3BX5SKR5', {
   send_page_view: true
 });
 </script>
+
+<!-- MOBILE VERTICAL VISIBILITY FIX
+     Visual/responsive CSS only: existing IDs, JavaScript, tools and functions are unchanged. -->
+<style id="mobile-vertical-visibility-fix">
+  /* Prevent flex/grid children from forcing the page wider than a portrait screen. */
+  html, body, .container, #postUploadTools, .additionalToolsGroup,
+  .proFeatureBox, .superStudio, .controls, .featureGrid, .studioPanel {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  img, canvas, video, iframe, input, select, textarea, button {
+    max-width: 100%;
+  }
+
+  /* Keep every control usable in portrait mode without changing its function. */
+  @media (max-width: 600px) {
+    body:not(.uploadOnlyMode) {
+      overflow-x: hidden !important;
+      width: 100% !important;
+    }
+
+    body:not(.uploadOnlyMode) .container {
+      width: 100% !important;
+      padding: 12px !important;
+      overflow: visible !important;
+    }
+
+    body:not(.uploadOnlyMode) .controls {
+      grid-template-columns: minmax(0, 1fr) !important;
+      width: 100% !important;
+    }
+
+    .featureGrid,
+    .featureActions,
+    .batchTools,
+    .editorActions,
+    .convertActions,
+    .studioGrid,
+    .layerGrid,
+    .scopeGrid,
+    .compareGrid,
+    .apGrid {
+      width: 100% !important;
+      min-width: 0 !important;
+    }
+
+    .featureGrid {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .featureActions,
+    .batchTools,
+    .editorActions,
+    .convertActions {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .presetRow {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .studioHeader {
+      min-width: 0 !important;
+      flex-wrap: wrap !important;
+    }
+
+    .studioHeader > * {
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+
+    .studioTabs {
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+
+    .studioTab {
+      flex: 0 0 auto !important;
+    }
+
+    .studioToolBar,
+    .zoomBar,
+    .layerToolbar,
+    .privacyBar,
+    .apRow {
+      width: 100% !important;
+      max-width: 100% !important;
+      flex-wrap: wrap !important;
+      overflow: visible !important;
+    }
+
+    .studioToolBar button,
+    .zoomBar button,
+    .layerToolbar button,
+    .privacyBar button,
+    .apRow button {
+      max-width: 100% !important;
+      min-width: 0 !important;
+      white-space: normal !important;
+      overflow-wrap: anywhere !important;
+    }
+
+    /* PDF controls are allowed to stack instead of disappearing off-screen. */
+    #pdfToImageTool .pdfToolRow {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) !important;
+      width: 100% !important;
+    }
+
+    #pdfToImageTool .pdfToolRow > * {
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+
+    #pdfToImageTool select,
+    #pdfToImageTool input[type="number"] {
+      min-width: 0 !important;
+    }
+
+    /* Prevent long text/filenames from pushing buttons outside the portrait viewport. */
+    .batchItem,
+    .batchResultItem,
+    .batchItemInfo,
+    .batchResultInfo,
+    .pdfPageResult,
+    .pdfPageInfo,
+    .authCard,
+    .authUserMenu,
+    .box,
+    .compareCard,
+    .scopeCard,
+    .inspectorCard,
+    .layerItem {
+      min-width: 0 !important;
+      max-width: 100% !important;
+      overflow-wrap: anywhere !important;
+      word-break: break-word;
+    }
+
+    .batchItem,
+    .batchResultItem {
+      flex-wrap: wrap !important;
+    }
+
+    .batchItemInfo,
+    .batchResultInfo,
+    .pdfPageInfo {
+      flex: 1 1 140px !important;
+    }
+
+    .batchItemActions {
+      width: 100% !important;
+      max-width: 100% !important;
+      flex-wrap: wrap !important;
+    }
+
+    .batchItemActions button {
+      flex: 1 1 auto !important;
+    }
+
+    .compareGrid {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .dashboardStats {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .inspectorGrid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .platformGrid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .moreToolsPanel {
+      max-width: calc(100vw - 24px) !important;
+      box-sizing: border-box !important;
+    }
+
+    .authModal {
+      overflow-y: auto !important;
+    }
+
+    .authCard {
+      width: 100% !important;
+      max-height: calc(100dvh - 24px) !important;
+      overflow-y: auto !important;
+    }
+
+    /* Keep headings and notices visible on narrow portrait screens. */
+    h1, h2, h3, p, label, .subtitle, .studioSub, .aiStatus,
+    .qualityDescription, .batchBgToolsNote {
+      max-width: 100% !important;
+      overflow-wrap: anywhere !important;
+    }
+
+    /* Do not let a fixed top-right sign-in control cover the main heading. */
+    #authUtility {
+      max-width: calc(100vw - 20px) !important;
+    }
+  }
+
+  @media (max-width: 420px) {
+    body:not(.uploadOnlyMode) .container {
+      padding: 9px !important;
+    }
+
+    .featureActions,
+    .batchTools,
+    .editorActions,
+    .convertActions,
+    .dashboardStats,
+    .inspectorGrid,
+    .platformGrid {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    button {
+      font-size: 15px !important;
+      padding: 12px 9px !important;
+    }
+
+    .studioTab {
+      font-size: 12px !important;
+      padding: 9px 10px !important;
+    }
+  }
+</style>
+
 </head>
 
 <body class='uploadOnlyMode'>
