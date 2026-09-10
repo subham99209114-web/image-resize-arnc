@@ -1297,6 +1297,117 @@ gtag('config', 'G-MT3BX5SKR5', {
   }
 </style>
 
+
+<style id="public-feature-showcase-css">
+/* === Public Feature Showcase ADD-ON ===
+   Visual-only/additive: does not modify existing editor controls or handlers.
+   The showcase is outside the signed-in-only footer, so it remains visible
+   whether the visitor is signed in or signed out (after the normal upload screen). */
+#publicFeatureShowcase{
+  width:100%;
+  margin:34px 0 0;
+  padding:26px 20px 30px;
+  background:rgba(0,0,0,.16);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;
+  box-shadow:0 12px 30px rgba(0,0,0,.16);
+}
+#publicFeatureShowcase .pfsHeader{
+  text-align:center;
+  margin-bottom:18px;
+}
+#publicFeatureShowcase .pfsHeader h2{
+  margin:0;
+  font-size:24px;
+  color:#FFD700;
+}
+#publicFeatureShowcase .pfsHeader p{
+  margin:7px 0 0;
+  color:#dbeafe;
+  font-size:13px;
+}
+#publicFeatureShowcase .pfsGrid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+}
+#publicFeatureShowcase .pfsCard{
+  min-width:0;
+  padding:15px 13px;
+  border-radius:12px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.11);
+  transition:transform .2s ease,background .2s ease,box-shadow .2s ease;
+  cursor:pointer;
+  position:relative;
+}
+#publicFeatureShowcase .pfsCard::after{
+  content:'Click for details ▾';
+  display:block;
+  margin-top:9px;
+  font-size:10px;
+  color:#a9c7ff;
+  opacity:.9;
+}
+#publicFeatureShowcase .pfsCard.is-open{
+  background:rgba(255,255,255,.13);
+  border-color:rgba(255,215,0,.42);
+  box-shadow:0 10px 28px rgba(0,0,0,.2);
+}
+#publicFeatureShowcase .pfsCard.is-open::after{content:'Hide details ▴';}
+#publicFeatureShowcase .pfsDetails{
+  display:none;
+  margin-top:12px;
+  padding-top:11px;
+  border-top:1px solid rgba(255,255,255,.12);
+  color:#eef6ff;
+  font-size:12px;
+  line-height:1.65;
+}
+#publicFeatureShowcase .pfsCard.is-open .pfsDetails{display:block;}
+#publicFeatureShowcase .pfsDetails ul{margin:7px 0 0 18px;padding:0;}
+#publicFeatureShowcase .pfsDetails li{margin:3px 0;}
+#publicFeatureShowcase .pfsDetails strong{color:#FFD700;}
+#publicFeatureShowcase .pfsCard:hover{
+  transform:translateY(-3px);
+  background:rgba(255,255,255,.13);
+  box-shadow:0 8px 22px rgba(0,0,0,.18);
+}
+#publicFeatureShowcase .pfsIcon{
+  font-size:23px;
+  line-height:1;
+  margin-bottom:8px;
+}
+#publicFeatureShowcase .pfsCard h3{
+  margin:0 0 6px;
+  color:#fff;
+  font-size:15px;
+  line-height:1.25;
+}
+#publicFeatureShowcase .pfsCard p{
+  margin:0;
+  color:#dbeafe;
+  font-size:11.5px;
+  line-height:1.5;
+}
+@media(max-width:1000px){
+  #publicFeatureShowcase .pfsGrid{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media(max-width:700px){
+  #publicFeatureShowcase{
+    margin-top:25px;
+    padding:20px 12px 24px;
+    border-radius:13px;
+  }
+  #publicFeatureShowcase .pfsGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+  #publicFeatureShowcase .pfsCard{padding:13px 11px;}
+  #publicFeatureShowcase .pfsHeader h2{font-size:20px;}
+}
+@media(max-width:420px){
+  #publicFeatureShowcase .pfsGrid{grid-template-columns:1fr;}
+}
+</style>
+
 </head>
 
 <body class='uploadOnlyMode'>
@@ -5041,84 +5152,50 @@ if(applyBgMarksBtn){
       var mc=marks.getContext('2d',{willReadFrequently:true});
       mc.drawImage(bgMarks,0,0,w,h);
       var md=mc.getImageData(0,0,w,h).data;
+
       var c=document.createElement('canvas');c.width=w;c.height=h;
-      var ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(originalImage,0,0,w,h);
+      var ctx=c.getContext('2d',{willReadFrequently:true});
+      ctx.drawImage(originalImage,0,0,w,h);
       var im=ctx.getImageData(0,0,w,h),d=im.data;
-      var tolerance=Math.max(0,Number(bgTolerance&&bgTolerance.value)||48);
-      var marked=new Uint8Array(w*h);
-      var seeds=[];
-      /* Convert every painted point to the real image coordinates. */
-      for(var my=0;my<marks.height;my++){
-        for(var mx=0;mx<marks.width;mx++){
-          var mi=(my*marks.width+mx)*4;
-          if(md[mi+3]>15){
-            var sx=Math.min(w-1,Math.max(0,Math.floor(mx*w/marks.width)));
-            var sy=Math.min(h-1,Math.max(0,Math.floor(my*h/marks.height)));
-            var sp=sy*w+sx;
-            if(!marked[sp]){marked[sp]=1;seeds.push(sp);}
-          }
+
+      /* IMPORTANT: remove ONLY the pixels directly painted with the brush.
+         No flood-fill and no color-tolerance expansion are used here. */
+      var removed=0;
+      for(var z=0;z<w*h;z++){
+        var zi=z*4;
+        if(md[zi+3]>15){
+          d[zi+3]=0;
+          removed++;
         }
       }
-      if(!seeds.length){setBackgroundStatus('Mark the background first.');return;}
-
-      /* Multi-area flood fill. Each mouse-selected area uses the color of
-         its own seed, so different background colors can be selected safely. */
-      var visited=new Uint8Array(w*h),stack=[];
-      function trySeed(seed){
-        if(visited[seed])return;
-        var si=seed*4, sr=d[si],sg=d[si+1],sb=d[si+2];
-        stack.push(seed);visited[seed]=1;
-        while(stack.length){
-          var pp=stack.pop(),x=pp%w,y=Math.floor(pp/w),ii=pp*4;
-          /* Every selected/background pixel becomes exactly #FFFFFF. */
-          d[ii]=255;d[ii+1]=255;d[ii+2]=255;d[ii+3]=255;
-          var nb=[pp-1,pp+1,pp-w,pp+w];
-          for(var n=0;n<4;n++){
-            var qp=nb[n];
-            if(qp<0||qp>=w*h||visited[qp])continue;
-            var qx=qp%w;
-            if((n===0&&qx===w-1)||(n===1&&qx===0))continue;
-            var qi=qp*4;
-            if(colorDistance(d[qi],d[qi+1],d[qi+2],sr,sg,sb)<=tolerance){
-              visited[qp]=1;stack.push(qp);
-            }
-          }
-        }
-      }
-      for(var si=0;si<seeds.length;si++)trySeed(seeds[si]);
-
-      /* Guarantee the exact white value for every pixel explicitly painted. */
-      for(var z=0;z<marked.length;z++)if(marked[z]){
-        var zi=z*4;d[zi]=255;d[zi+1]=255;d[zi+2]=255;d[zi+3]=255;
-      }
+      if(!removed){setBackgroundStatus('Paint the exact area you want to remove first.');return;}
       ctx.putImageData(im,0,0);
+
       var niImg=new Image();
       niImg.onload=function(){
         originalImage=niImg;foregroundImage=niImg;imageWidth=w;imageHeight=h;
         widthInput.value=w;heightInput.value=h;formatSelect.value='image/png';
-        backgroundMode='color';backgroundColor.value='#ffffff';bgColorPicker.value='#ffffff';
+        backgroundMode='none';backgroundImage=null;
         bgMousePanel.style.display='none';bgMarks=null;
-        renderReplacementBackground('color','#ffffff',null);
-        setBackgroundStatus('✅ Selected background areas removed. White background is active; you can now choose another JPG background color.');
-        info.innerHTML='Mouse background removal applied<br/>'+w+' × '+h+' px<br/>Removed background: pure white (#FFFFFF).';
+        previewImage.src=niImg.src;
+        previewImage.classList.add('transparentPreview');
+        cropImage.src=niImg.src;
+        setBackgroundStatus('✅ Only the brush-painted area was removed. All other background remains unchanged.');
+        info.innerHTML='Mouse background removal applied<br/>'+w+' × '+h+' px<br/>Removed area: only the exact brush-painted pixels.';
         if(batchBgMouseMode && batchImages.length && batchBgMouseTargetIndex>=0 && batchBgMouseTargetIndex<batchImages.length){
-          /* BATCH MOUSE FIX: update the exact batch item directly. Do not route
-             the result through the single-image background renderer, because
-             that can replace originalImage before the batch item is updated. */
           var mouseTarget=batchBgMouseTargetIndex;
           var mouseItem=batchImages[mouseTarget];
           if(mouseItem){
             mouseItem.image=niImg;
+            mouseItem.foregroundImage=niImg;
             mouseItem.backgroundApplied=true;
             mouseItem.backgroundMode='mouse';
-            mouseItem.backgroundOriginalSrc=mouseItem.backgroundOriginalSrc||mouseItem.originalImage&&mouseItem.originalImage.src;
+            mouseItem.backgroundOriginalSrc=mouseItem.backgroundOriginalSrc||(mouseItem.originalImage&&mouseItem.originalImage.src);
             renderBatchList();
             batchIndex=mouseTarget;
-            originalImage=niImg;
-            foregroundImage=niImg;
             previewImage.src=niImg.src;
             showBatchImage(mouseTarget);
-            setBatchBgStatus('✅ Mouse background removal applied to batch image '+(mouseTarget+1)+'.');
+            setBatchBgStatus('✅ Only the painted area was removed from batch image '+(mouseTarget+1)+'.');
           }
           batchBgMouseMode=false;
           batchBgMouseTargetIndex=-1;
@@ -5126,7 +5203,7 @@ if(applyBgMarksBtn){
       };
       niImg.src=c.toDataURL('image/png');
     }catch(err){
-      console.error(err);setBackgroundStatus('Background removal failed. Try a smaller brush or adjust tolerance.');
+      console.error(err);setBackgroundStatus('Mouse background removal failed. Please try again.');
     }
   };
 }
@@ -5136,178 +5213,32 @@ if(window.requestIdleCallback){requestIdleCallback(function(){getBackgroundRemov
 else{setTimeout(function(){getBackgroundRemovalEngine().catch(function(){});},1200);}
 
 /* AI-powered automatic background removal. */
-/*
- * AI background removal + foreground/clothing protection.
- * The AI model supplies the primary subject mask. The refinement below only
- * repairs enclosed transparent "holes" inside the detected foreground when
- * the original pixels are clearly different from the sampled outer background.
- * This helps prevent shirts, pants, fur, feathers and object surfaces from
- * being accidentally cut out, while keeping the existing UI and controls.
- */
-function refineCutoutBlobForForegroundProtection(blob, sourceImage){
-  return new Promise(function(resolve,reject){
-    try{
-      var aiImg=new Image();
-      aiImg.onload=function(){
-        try{
-          var w=aiImg.naturalWidth,h=aiImg.naturalHeight;
-          var c=document.createElement('canvas');
-          c.width=w;c.height=h;
-          var ctx=c.getContext('2d',{willReadFrequently:true});
-          ctx.drawImage(sourceImage,0,0,w,h);
-          var src=ctx.getImageData(0,0,w,h);
-          ctx.clearRect(0,0,w,h);
-          ctx.drawImage(aiImg,0,0,w,h);
-          var mask=ctx.getImageData(0,0,w,h);
-          var sd=src.data,md=mask.data;
-
-          /* Sample the outer border so we can distinguish likely background
-             colors from clothing/object colors inside a foreground hole. */
-          var samples=[];
-          var step=Math.max(1,Math.floor(Math.max(w,h)/80));
-          function sample(x,y){
-            x=Math.max(0,Math.min(w-1,x));
-            y=Math.max(0,Math.min(h-1,y));
-            var i=(y*w+x)*4;
-            samples.push([sd[i],sd[i+1],sd[i+2]]);
-          }
-          for(var x=0;x<w;x+=step){sample(x,0);sample(x,h-1);}
-          for(var y=0;y<h;y+=step){sample(0,y);sample(w-1,y);}
-          sample(0,0);sample(w-1,0);sample(0,h-1);sample(w-1,h-1);
-
-          function bgDistance(r,g,b){
-            var best=1e9;
-            for(var k=0;k<samples.length;k++){
-              var s=samples[k],d=colorDistance(r,g,b,s[0],s[1],s[2]);
-              if(d<best)best=d;
-            }
-            return best;
-          }
-
-          /*
-           * Find transparent regions completely enclosed by the AI foreground.
-           * Only regions not connected to an image edge are candidates.
-           * A bounded size keeps true gaps between limbs/object parts intact.
-           */
-          var total=w*h;
-          var visited=new Uint8Array(total);
-          var queue=[];
-          var candidates=[];
-          var maxHole=Math.max(2500,Math.floor(total*0.12));
-
-          function visitTransparentRegion(seed){
-            if(visited[seed])return null;
-            var si=seed*4;
-            if(md[si+3]>35)return null;
-
-            queue.length=0;
-            var region=[];
-            var touchesEdge=false;
-            queue.push(seed);visited[seed]=1;
-
-            while(queue.length){
-              var p=queue.pop(),px=p%w,py=Math.floor(p/w);
-              region.push(p);
-              if(px===0||py===0||px===w-1||py===h-1)touchesEdge=true;
-
-              var n1=p-1,n2=p+1,n3=p-w,n4=p+w;
-              if(px>0&&!visited[n1]&&md[n1*4+3]<=35){visited[n1]=1;queue.push(n1);}
-              if(px<w-1&&!visited[n2]&&md[n2*4+3]<=35){visited[n2]=1;queue.push(n2);}
-              if(py>0&&!visited[n3]&&md[n3*4+3]<=35){visited[n3]=1;queue.push(n3);}
-              if(py<h-1&&!visited[n4]&&md[n4*4+3]<=35){visited[n4]=1;queue.push(n4);}
-              if(region.length>maxHole+1)break;
-            }
-            return {pixels:region,touchesEdge:touchesEdge,tooLarge:region.length>maxHole};
-          }
-
-          for(var p=0;p<total;p++){
-            if(visited[p]||md[p*4+3]>35)continue;
-            var region=visitTransparentRegion(p);
-            if(!region||region.touchesEdge||region.tooLarge)continue;
-
-            /*
-             * Check the original colors in the region. If most pixels are
-             * strongly different from the outer background, they are more
-             * likely to be clothing/fur/object material than background.
-             */
-            var strong=0,count=0;
-            for(var r=0;r<region.pixels.length;r++){
-              var rp=region.pixels[r],ri=rp*4;
-              var bd=bgDistance(sd[ri],sd[ri+1],sd[ri+2]);
-              if(bd>42)strong++;
-              count++;
-            }
-            if(count && strong/count>=0.38)candidates.push(region.pixels);
-          }
-
-          /* Restore only the interior of qualifying holes. Keep the AI alpha
-             at the outer contour so hair/fur/object edges remain soft. */
-          for(var q=0;q<candidates.length;q++){
-            var pix=candidates[q];
-            for(var z=0;z<pix.length;z++){
-              var pi=pix[z]*4;
-              md[pi]=sd[pi];
-              md[pi+1]=sd[pi+1];
-              md[pi+2]=sd[pi+2];
-              md[pi+3]=255;
-            }
-          }
-
-          ctx.putImageData(mask,0,0);
-          c.toBlob(function(out){
-            if(out)resolve(out);
-            else reject(new Error('Foreground refinement produced no image.'));
-          },'image/png');
-        }catch(e){reject(e);}
-      };
-      aiImg.onerror=function(){reject(new Error('AI cutout could not be decoded for refinement.'));};
-      aiImg.src=URL.createObjectURL(blob);
-    }catch(e){reject(e);}
-  });
-}
-
 async function removeBackgroundLocal(){
   if(!originalImage){setBackgroundStatus('Upload an image first.');return;}
   try{
-    setBackgroundStatus('🤖 AI is detecting the subject automatically — protecting person, clothing, animals and objects.');
+    setBackgroundStatus('🤖 AI is detecting the subject automatically — same clean cutout style as the video.');
     if(progressWrap) progressWrap.style.display='block';
     if(progressBar) progressBar.style.width='0%';
     if(progressText) progressText.textContent='AI background removal: detecting subject (people / animals / objects)...';
 
-    var sourceImage=originalImage;
     var aiRemove=await getBackgroundRemovalEngine();
     var cfg=getFastBackgroundRemovalConfig();
-
-    var blob=await aiRemove(sourceImage.src,Object.assign(cfg,{
-      /*
-       * ISNet-Medium is the higher-quality general foreground model exposed
-       * by @imgly/background-removal. It is intended for general foreground
-       * subjects, rather than a human-only mask.
-       */
+    var blob=await aiRemove(originalImage.src,Object.assign(cfg,{
+      /* Use the higher-quality general foreground model. It is not human-only,
+         so animals, pets, products and other foreground subjects are preserved. */
       model:'medium',
-      output:{format:'image/png',quality:1},
       progress:function(key,current,total){
         var pct=total?Math.round(current/total*100):0;
-        if(progressBar)progressBar.style.width=Math.max(0,Math.min(100,pct))+'%';
-        if(progressText)progressText.textContent='AI background removal: '+pct+'%';
-        setBackgroundStatus('🤖 Protecting foreground — person/clothes, animals & objects... '+pct+'%');
+        if(progressBar) progressBar.style.width=Math.max(0,Math.min(100,pct))+'%';
+        if(progressText) progressText.textContent='AI background removal: '+pct+'%';
+        setBackgroundStatus('🤖 AI background removal: protecting foreground subject (including animals)... '+pct+'%');
       }
     }));
 
-    /*
-     * Second pass: repair enclosed foreground holes that are likely clothing,
-     * fur/feathers or object material. If refinement fails, use the original
-     * AI result rather than breaking the existing background-removal feature.
-     */
-    var refinedBlob;
-    try{
-      refinedBlob=await refineCutoutBlobForForegroundProtection(blob,sourceImage);
-    }catch(refineErr){
-      console.warn('Foreground/clothing refinement skipped:',refineErr);
-      refinedBlob=blob;
-    }
-
-    var cutoutUrl=URL.createObjectURL(refinedBlob);
+    /* IMPORTANT: keep the AI PNG alpha channel intact.
+       The video result is a clean transparent cutout/checkerboard preview,
+       so DO NOT paint white behind it and DO NOT flatten semi-transparent edges. */
+    var cutoutUrl=URL.createObjectURL(blob);
     var ni=new Image();
     ni.onload=function(){
       try{
@@ -5322,6 +5253,7 @@ async function removeBackgroundLocal(){
         cropImage.src=cutoutUrl;
         formatSelect.value='image/png';
 
+        /* Transparent cutout is the actual processed image. */
         backgroundMode='removed';
         previewImage.classList.add('transparentPreview');
         backgroundImage=null;
@@ -5330,11 +5262,12 @@ async function removeBackgroundLocal(){
 
         if(progressBar)progressBar.style.width='100%';
         if(progressText)progressText.textContent='AI background removal: complete';
-        setBackgroundStatus('✅ Background removed. Person/clothes, animals and objects are protected; transparent PNG ready.');
+        setBackgroundStatus('✅ Background removed cleanly like the video. Transparent PNG ready.');
         try{document.dispatchEvent(new CustomEvent('proStudioBackgroundChanged'));}catch(e){}
-        info.innerHTML='AI background removal applied<br/>'+w+' × '+h+' px<br/><b>Foreground protected — person/clothes / animals / objects preserved</b>';
+        info.innerHTML='AI background removal applied<br/>'+w+' × '+h+' px<br/><b>Clean transparent cutout — people / animals / objects preserved</b>';
         if(progressWrap)setTimeout(function(){progressWrap.style.display='none';},900);
 
+        /* Keep the URL alive because previewImage/cropImage use it. */
         if(ni._oldCutoutUrl)URL.revokeObjectURL(ni._oldCutoutUrl);
         ni._oldCutoutUrl=cutoutUrl;
       }catch(e){
@@ -5806,6 +5739,47 @@ plusBtn.onclick=function(){q('superStudio').querySelectorAll('.studioTab').forEa
 })();
 </script>
   
+
+<!-- PUBLIC FEATURE SHOWCASE: visible to signed-in and signed-out visitors -->
+<section id="publicFeatureShowcase" aria-label="ResizeImage.ARnc features">
+  <div class="pfsHeader">
+    <h2>✨ ResizeImage.ARnc Features</h2>
+    <p>All major tools available on this website — shown in small boxes without changing the existing editor.</p>
+  </div>
+
+  <div class="pfsGrid">
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">📏</div><h3>Resize &amp; Compress</h3><p>Width, Height, MP, target KB, image format, DPI and quality controls.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Width and Height in PX, inch, CM or percentage</li><li>Megapixel and Target Size controls</li><li>JPG/JPEG, WEBP and PNG output</li><li>rotation</li><li>DPI 72–600</li><li>brightness</li><li>3 quality levels</li><li>original-like quality</li><li>keep aspect ratio</li><li>crop</li><li>final Resize &amp</li><li>Compress action.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🎯</div><h3>Quick Presets</h3><p>Ready settings for mobile, Instagram, YouTube, passport, print, web and email.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Mobile 1080px, Instagram, Story, YouTube thumbnail, Passport, Print, Website, Email and Maximum Compression presets.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">✂️</div><h3>Crop Image</h3><p>Mouse or touch drag crop area with apply, cancel and navigation controls.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Interactive crop area</li><li>drag/select the required region</li><li>apply or cancel changes</li><li>works with the editor workflow and touch-friendly controls.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">📚</div><h3>Batch Resize</h3><p>Resize multiple selected images and download the processed batch together.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Batch image selection, shared resize settings, processing of multiple files and batch download support.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🖼️</div><h3>Background Removal</h3><p>Remove backgrounds with the automatic tool and local browser processing.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Automatic background removal</li><li>browser-local processing for supported local tools</li><li>combine the result with background replacement and export options.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🖱️</div><h3>Mouse Background Remove</h3><p>Click or drag over separate background areas, then apply the marked removal.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Mouse-based area selection/removal</li><li>brush size, color and tolerance controls</li><li>apply, cancel and clear changes</li><li>useful for precise cleanup of selected areas.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🎨</div><h3>Background Tools</h3><p>Add a color or image background and clear background changes.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Add a solid background color or an image background</li><li>clear/reset background changes</li><li>combine with background removal results.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">📚</div><h3>Batch Background Tools</h3><p>Apply background removal, colors or images across selected batch images.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Batch background processing, removal, color replacement and image-background options for selected images.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">⚙️</div><h3>Advanced Adjustments</h3><p>Contrast, saturation, sharpness, filters, flip, JPG background and reset tools.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Contrast, saturation and sharpness</li><li>filters</li><li>flip</li><li>JPG background handling</li><li>undo/redo and reset controls.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">💧</div><h3>Watermark &amp; Output</h3><p>Watermark text, opacity, output prefix and metadata/privacy options.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Watermark text and opacity</li><li>output filename prefix</li><li>metadata behavior</li><li>Remove EXIF/privacy option</li><li>keep metadata when possible.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🖼️</div><h3>Image Editor</h3><p>Brightness, contrast, saturation, filters, rotate, flip and edited-image download.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Brightness, contrast, saturation, filters, rotation and flip controls, with apply/reset and edited-image download workflow.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🛠️</div><h3>Advanced Editor</h3><p>Draw, crop, multiple text layers, resize/rotate text, styles, outline, shadow, glow and animation.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Crop by area</li><li>click-to-place text</li><li>drag/resize/rotate text</li><li>font/style/alignment</li><li>multiple text layers</li><li>outline, shadow and glow</li><li>background box</li><li>padding/radius/border</li><li>blend modes</li><li>fill/gradient/transparent</li><li>opacity</li><li>animation</li><li>draw mode</li><li>delete selected</li><li>animated GIF/PNG output.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🔄</div><h3>Convert</h3><p>Convert images to JPG, PNG, WEBP, SVG, BMP, ICO and GIF formats.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>JPG/JPEG, PNG, WEBP, SVG, BMP, ICO and GIF conversion</li><li>quality setting</li><li>JPG background</li><li>filename control</li><li>preview</li><li>convert/download/reset.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">📄</div><h3>PDF Tools</h3><p>PDF-to-image workflow plus PDF downloads and batch PDF output tools.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>PDF conversion/output workflow</li><li>download individual PDFs</li><li>batch PDF creation and ZIP download options where supported by the editor.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🤖</div><h3>Optional AI Tools</h3><p>AI enhance, smart crop, quality detection, upscale and smart resize helpers.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>AI Auto Enhance, Smart Crop, Quality Detection, Upscale and Smart Resize helpers</li><li>availability depends on the implementation and local/browser support.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🚀</div><h3>Super Pro Studio</h3><p>Professional editor, AI tools, transform, layers, export, inspector and smart workflow.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>AI Studio, Editor, Transform, Layers, Export and Inspector</li><li>object detection</li><li>Magic Eraser</li><li>Object Clone</li><li>Healing/Retouch</li><li>Hair/Edge Refinement</li><li>Subject Focus</li><li>Smart Background Blur</li><li>AI Relighting</li><li>Auto Enhance Pro</li><li>AI Upscale 2x/4x</li><li>Smart Composition</li><li>Cleanup</li><li>Object Remover</li><li>Background/Shadow Generator</li><li>Reflection Removal</li><li>Face/Subject Enhancement</li><li>Deblur</li><li>Colorize</li><li>Restoration and Subject Centering.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🧑‍🎨</div><h3>Pro Drawing &amp; Design</h3><p>Brush, pencil, eraser, shapes, arrows, blur, pixelate and mosaic tools.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Brush, pencil and eraser</li><li>line, rectangle, circle and arrow</li><li>blur brush</li><li>pixelate and mosaic tools.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🗂️</div><h3>Layers &amp; Text</h3><p>Add, duplicate, delete, merge and flatten layers with opacity and blend modes.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Image, text and shape layers</li><li>duplicate/delete/merge/flatten</li><li>layer naming</li><li>opacity</li><li>blend modes</li><li>multi-object text editing.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">💾</div><h3>Professional Export</h3><p>JPG, PNG, WebP, AVIF, quality, scale, filename pattern and metadata controls.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>JPG/PNG/WebP/AVIF</li><li>quality</li><li>scale</li><li>filename pattern</li><li>metadata and EXIF/GPS options</li><li>progressive JPG</li><li>transparency</li><li>2x/3x export.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🌐</div><h3>One-Click Platform Export</h3><p>Presets for Instagram, Story, YouTube, Facebook, WhatsApp, LinkedIn, X and Pinterest.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Instagram Post/Story, YouTube Thumbnail, Facebook Post/Cover, WhatsApp Status, LinkedIn, X and Pinterest presets.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">📊</div><h3>Inspector &amp; Scopes</h3><p>Resolution, aspect ratio, megapixels, file size, alpha, orientation and visual scopes.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Resolution, aspect ratio, megapixels, file size, DPI, color type, alpha and orientation</li><li>RGB Histogram, Luminance, RGB Parade and Waveform views.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🧠</div><h3>Smart Quality Advisor</h3><p>Image-based recommendations for better output quality and size decisions.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Quality guidance and smart recommendations around output quality, dimensions and file-size trade-offs.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">📈</div><h3>Before → After Dashboard</h3><p>Compare original and processed images with saved percentage and dimension information.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Before/after comparison</li><li>output dimensions</li><li>file-size information</li><li>percentage-based comparisons and processing results.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🔒</div><h3>Privacy / Local Processing</h3><p>Many tools run locally in the browser with temporary-memory clearing controls.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Browser-local processing for supported tools</li><li>no-upload-required workflow for local tools</li><li>controls for clearing temporary memory/data.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">📥</div><h3>Download Tools</h3><p>Download resized images, PDFs, edited results and ZIP files for batch results.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Download resized images</li><li>PDF downloads</li><li>all-images ZIP</li><li>all-PDFs ZIP</li><li>edited and converted image downloads.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">📱</div><h3>Mobile Friendly</h3><p>Responsive controls and touch-friendly crop and editor workflows for smaller screens.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Responsive layout</li><li>touch-friendly interactions</li><li>mobile-aware controls for crop and editing workflows.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🔐</div><h3>Sign In / Account</h3><p>Firebase account sign-in, sign-up, Google sign-in and account/logout controls.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>Firebase authentication</li><li>sign in/sign up</li><li>Google sign-in</li><li>logout</li><li>account state handling. Recovery PIN is not included.</li></ul></div></div>
+    <div class="pfsCard" role="button" tabindex="0" aria-expanded="false"><div class="pfsIcon">🌍</div><h3>English / Hindi</h3><p>Built-in language switching support for English and Hindi interface text.</p><div class="pfsDetails"><strong>इस Feature में:</strong><ul><li>English/Hindi language toggle for the website interface and supported feature labels.</li></ul></div></div>
+  </div>
+</section>
+
+
 <div id='signedInOnlySection' style='display:none;'>
 <br>
   <h1 aria-expanded='false' class='footerOptionalToggle' id='footerOptionalToggle' role='button' tabindex='0'><b><p id='optionalFooterToggle' style='cursor:pointer;'>Optional <span id='optionalFooterArrow'></span></p>
@@ -7995,6 +7969,22 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   });
 })();
 //
+</script>
+<script id="public-feature-showcase-js">
+(function(){
+  const box=document.getElementById('publicFeatureShowcase');
+  if(!box) return;
+  const cards=[...box.querySelectorAll('.pfsCard')];
+  function toggle(card){
+    const open=card.classList.contains('is-open');
+    cards.forEach(c=>{c.classList.remove('is-open');c.setAttribute('aria-expanded','false');});
+    if(!open){card.classList.add('is-open');card.setAttribute('aria-expanded','true');}
+  }
+  cards.forEach(card=>{
+    card.addEventListener('click',()=>toggle(card));
+    card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle(card);}});
+  });
+})();
 </script>
 </body>
 </html>
