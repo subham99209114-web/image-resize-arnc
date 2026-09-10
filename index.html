@@ -4444,49 +4444,120 @@ async function protectPersonClothingAlpha(sourceImage,baseAlpha,width,height){
     var segmenter=await getPersonClothingSegmenter();
     var result=segmenter.segment(sourceImage);
     var mask=result&&result.categoryMask;
-    if(!mask)return baseAlpha;
-    var md=mask.getAsUint8Array();
-    var mw=mask.width||256,mh=mask.height||256;
-    var protectedPixels=0;
-    var out=new Uint8ClampedArray(baseAlpha.length);
-    out.set(baseAlpha);
+    var confs=result&&result.confidenceMasks;
+    if(!mask&&!confs)return baseAlpha;
 
-    /* Person classes: 1 hair, 2 body-skin, 3 face-skin, 4 clothes,
-       5 accessories. A tiny 1-pixel dilation at the model resolution also
-       protects fine clothing/edge pixels that sit directly beside the person. */
-    function isPerson(mx,my){
-      for(var yy=-1;yy<=1;yy++){
-        var py=my+yy;if(py<0||py>=mh)continue;
-        for(var xx=-1;xx<=1;xx++){
-          var px=mx+xx;if(px<0||px>=mw)continue;
-          var cat=md[py*mw+px];
-          if(cat>=1&&cat<=5)return true;
-        }
+    var mw=(mask&&mask.width)||256,mh=(mask&&mask.height)||256;
+    var md=mask?mask.getAsUint8Array():null;
+    var out=new Uint8ClampedArray(baseAlpha.length);out.set(baseAlpha);
+
+    /*
+      IMPORTANT CLOTHING FIX:
+      The previous protection pass used only the 256px category mask and made
+      every detected clothes pixel fully opaque. That can still miss very light
+      / semi-transparent fabric because the low-resolution argmax may choose
+      background. This version also reads the model's per-class confidence.
+      A pixel is protected when the model has meaningful confidence that it is
+      hair/skin/clothes/accessory, and the protection is expanded only around
+      the existing ISNet foreground. This prevents white background from being
+      pulled back while restoring white scarves, shirts and sleeves.
+    */
+    var confidenceArrays=[];
+    if(Array.isArray(confs)){
+      for(var ci=0;ci<confs.length;ci++){
+        try{confidenceArrays[ci]=confs[ci].getAsFloat32Array();}catch(e){confidenceArrays[ci]=null;}
       }
-      return false;
     }
 
-    for(var y=0;y<height;y++){
-      var my=Math.min(mh-1,Math.floor(y*mh/height));
-      for(var x=0;x<width;x++){
-        var mx=Math.min(mw-1,Math.floor(x*mw/width));
-        if(isPerson(mx,my)){
-          var pos=y*width+x;
-          /* Keep the original ISNet alpha when it is already stronger;
-             otherwise restore this pixel as solid foreground. */
-          if(out[pos]<245)out[pos]=255;
-          protectedPixels++;
+    function personScore(mx,my){
+      var best=0;
+      /* Sample a small neighborhood to compensate for the 256px model. */
+      for(var yy=-2;yy<=2;yy++){
+        var py=my+yy;if(py<0||py>=mh)continue;
+        for(var xx=-2;xx<=2;xx++){
+          var px=mx+xx;if(px<0||px>=mw)continue;
+          var idx=py*mw+px;
+          if(md){
+            var cat=md[idx];
+            if(cat>=1&&cat<=5)best=Math.max(best,0.72);
+          }
+          /* confidenceMasks are indexed by semantic class. */
+          for(var k=1;k<=5;k++){
+            var arr=confidenceArrays[k];
+            if(arr&&idx<arr.length){
+              var v=arr[idx];
+              if(v>best)best=v;
+            }
+          }
         }
+      }
+      return best;
+    }
+
+    /* Build a low-resolution person mask first, then upscale with a soft
+       threshold. We only restore alpha where person evidence is strong. */
+    var pmw=mw,pmh=mh;
+    var low=new Float32Array(pmw*pmh);
+    for(var ly=0;ly<pmh;ly++){
+      for(var lx=0;lx<pmw;lx++){
+        var idx=ly*pmw+lx,score=0;
+        if(md){var c=md[idx];if(c>=1&&c<=5)score=0.80;}
+        for(var kk=1;kk<=5;kk++){
+          var ca=confidenceArrays[kk];
+          if(ca&&idx<ca.length)score=Math.max(score,ca[idx]);
+        }
+        low[idx]=score;
+      }
+    }
+
+    /* Bilinear sample of the person confidence mask. */
+    function sampleLow(fx,fy){
+      fx=Math.max(0,Math.min(pmw-1,fx));fy=Math.max(0,Math.min(pmh-1,fy));
+      var x0=Math.floor(fx),y0=Math.floor(fy),x1=Math.min(pmw-1,x0+1),y1=Math.min(pmh-1,y0+1);
+      var tx=fx-x0,ty=fy-y0;
+      var a=low[y0*pmw+x0],b=low[y0*pmw+x1],c=low[y1*pmw+x0],d=low[y1*pmw+x1];
+      return a*(1-tx)*(1-ty)+b*tx*(1-ty)+c*(1-tx)*ty+d*tx*ty;
+    }
+
+    /* Find the approximate ISNet foreground bounds. This keeps the repair
+       from turning large areas of a white background into foreground. */
+    var minX=width,minY=height,maxX=-1,maxY=-1;
+    for(var by=0;by<height;by+=3){
+      for(var bx=0;bx<width;bx+=3){
+        if(baseAlpha[by*width+bx]>35){
+          if(bx<minX)minX=bx;if(bx>maxX)maxX=bx;if(by<minY)minY=by;if(by>maxY)maxY=by;
+        }
+      }
+    }
+    if(maxX<0||maxY<0)return baseAlpha;
+    var padX=Math.max(18,Math.round(width*0.035));
+    var padY=Math.max(18,Math.round(height*0.035));
+    minX=Math.max(0,minX-padX);maxX=Math.min(width-1,maxX+padX);
+    minY=Math.max(0,minY-padY);maxY=Math.min(height-1,maxY+padY);
+
+    for(var y=0;y<height;y++){
+      if(y<minY||y>maxY)continue;
+      var fy=((y+0.5)*pmh/height)-0.5;
+      for(var x=0;x<width;x++){
+        if(x<minX||x>maxX)continue;
+        var score=sampleLow(((x+0.5)*pmw/width)-0.5,fy);
+        var pos=y*width+x;
+        var a=baseAlpha[pos];
+        /* Strong clothing/person confidence restores transparent holes.
+           Medium confidence restores only if close to existing foreground. */
+        if(score>=0.48){
+          if(a<255)a=255;
+        }else if(score>=0.25 && a>0){
+          a=Math.max(a,245);
+        }
+        out[pos]=a;
       }
     }
 
     if(result&&typeof result.close==='function')result.close();
-    /* If the model found almost no person, do not trust it as a protection
-       mask; this keeps product/animal images on the existing ISNet path. */
-    if(protectedPixels<Math.max(64,Math.floor(width*height*0.002)))return baseAlpha;
     return out;
   }catch(err){
-    console.warn('Person/clothing protection unavailable; keeping ISNet result.',err);
+    console.warn('Person/clothing confidence protection unavailable; keeping ISNet result.',err);
     return baseAlpha;
   }
 }
