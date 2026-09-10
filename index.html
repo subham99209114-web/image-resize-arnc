@@ -6435,18 +6435,26 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
   'use strict';
 
   /*
-   * PHOTO RESIZE.ARNC ACCOUNT SYSTEM
-   * Uses Firebase Authentication for real accounts.
-   * IMPORTANT: Replace the placeholder values below with the config
-   * from Firebase Console > Project settings > Your apps > Web app.
+   * PHOTO RESIZE.ARNC ACCOUNT SYSTEM — RE-LOGIN FIX
+   * ------------------------------------------------------------
+   * Keeps the existing Firebase account system, UI and all editor
+   * functions unchanged.
+   *
+   * Fixes:
+   *  1) Google Sign-In button is always re-enabled after logout.
+   *  2) Firebase Auth state is monitored continuously.
+   *  3) Email/Google sign-in can be used again after logout.
+   *  4) Firebase SESSION persistence is retained.
+   *  5) Redirect result is handled after Firebase Auth is ready.
    */
+
   var FIREBASE_CONFIG = {
     apiKey: "AIzaSyAVly6Me02NzFYsePJmVR5FUEXO8t0mQ2U",
     authDomain: "resizeimage-arnc.firebaseapp.com",
     projectId: "resizeimage-arnc",
     storageBucket: "resizeimage-arnc.firebasestorage.app",
     messagingSenderId: "776596533914",
-    appId: "1:776596533914:web:8bf914f9f8ea3a7e86a523",
+    appId: "1:776596533914:web:8bf914f9f8ea3a7e86a523"
   };
 
   var configured =
@@ -6478,23 +6486,9 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
   var accountBtn=document.getElementById('authAccountBtn');
   var mode='signin';
   var auth=null;
+  var persistenceReady=null;
+  var authBusy=false;
 
-  /*
-   * SESSION-ONLY SIGN-IN BEHAVIOR
-   * ------------------------------------------------------------
-   * The existing Firebase account system is preserved, but a
-   * previously restored Firebase login is immediately signed out
-   * when this page is opened/reloaded.
-   *
-   * Result:
-   *   - Sign In works normally.
-   *   - Reloading this page requires Sign In again.
-   *   - Opening the website again requires Sign In again.
-   *   - The signed-in email is cleared from the UI after reload.
-   *   - Explicit Log Out continues to work normally.
-   *   - No editor/design/processing controls are changed.
-   */
-  /* Prevent the browser from visually restoring the previous login fields. */
   if(emailInput) emailInput.setAttribute('autocomplete','off');
   if(passInput) passInput.setAttribute('autocomplete','new-password');
   if(confirmInput) confirmInput.setAttribute('autocomplete','new-password');
@@ -6505,6 +6499,13 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
     if(confirmInput) confirmInput.value='';
   }
 
+  function resetAuthButtons(){
+    authBusy=false;
+    if(submitBtn) submitBtn.disabled=false;
+    if(googleBtn) googleBtn.disabled=false;
+    if(emailResetBtn) emailResetBtn.disabled=false;
+  }
+
   function status(msg){
     if(statusEl) statusEl.textContent=msg||'';
   }
@@ -6512,6 +6513,7 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
   function openModal(){
     if(userMenu) userMenu.classList.remove('show');
     if(openBtn) openBtn.setAttribute('aria-expanded','false');
+    resetAuthButtons();
     if(modal) modal.classList.add('show');
     if(emailInput) setTimeout(function(){emailInput.focus();},40);
   }
@@ -6519,6 +6521,7 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
   function closeModal(){
     if(modal) modal.classList.remove('show');
     status('');
+    resetAuthButtons();
   }
 
   function setMode(next){
@@ -6527,6 +6530,7 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
     if(signUpTab) signUpTab.classList.toggle('active',mode==='signup');
     if(confirmWrap) confirmWrap.style.display=mode==='signup'?'block':'none';
     if(confirmInput) confirmInput.required=mode==='signup';
+    resetAuthButtons();
     status('');
   }
 
@@ -6552,13 +6556,13 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
 
   function updateUI(user){
     document.body.classList.toggle('auth-signed-in', !!user);
+
     if(!openBtn) return;
+
     var showAdditionalToggle=document.getElementById('showAdditionalToggle');
     var showAdditionalTools=document.getElementById('showAdditionalTools');
     var signInRequirementText=document.getElementById('signInRequirementText');
 
-    /* Hide the Sign In requirement message after login.
-       Show it again immediately after logout. */
     if(signInRequirementText){
       signInRequirementText.style.display=user ? 'none' : 'block';
     }
@@ -6566,9 +6570,8 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
     if(showAdditionalToggle){
       showAdditionalToggle.style.display=user ? 'block' : 'none';
     }
+
     if(!user && showAdditionalTools){
-      /* On logout, hide the Additional/Professional checkbox AND every
-         Optional/Additional section that may have been opened. */
       showAdditionalTools.checked=false;
       var additionalToolsGroup=document.getElementById('additionalToolsGroup');
       if(additionalToolsGroup){
@@ -6581,7 +6584,7 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
       }
       document.body.classList.remove('additionalSectionFocus');
     }
-    /* Batch Background Tools are available only while signed in. */
+
     var batchBackgroundTools=document.getElementById('batchBackgroundTools');
     if(batchBackgroundTools){
       batchBackgroundTools.style.display=user ? 'block' : 'none';
@@ -6591,6 +6594,7 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
     if(signedInOnlySection){
       signedInOnlySection.style.display=user ? 'block' : 'none';
     }
+
     if(user){
       if(buttonIcon) buttonIcon.innerHTML='&#128100;';
       if(buttonText) buttonText.textContent=user.displayName || 'Account';
@@ -6605,12 +6609,56 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
       if(accountBtn) accountBtn.style.display='none';
       if(logoutBtn) logoutBtn.style.display='none';
       if(userMenu) userMenu.classList.remove('show');
+
+      /* Critical re-login fix: every auth button is usable again. */
+      resetAuthButtons();
+      clearAuthFields();
+      setMode('signin');
     }
+  }
+
+  function firebaseWebEnvironmentOK(){
+    var protocol=String(window.location.protocol||'').toLowerCase();
+    return protocol==='http:' || protocol==='https:';
+  }
+
+  function storageAvailable(){
+    try{
+      var key='__resizeimage_arnc_storage_test__';
+      window.localStorage.setItem(key,'1');
+      window.localStorage.removeItem(key);
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  function ensurePersistence(){
+    if(!auth) return Promise.reject(new Error('Authentication is not available.'));
+    if(persistenceReady) return persistenceReady;
+
+    persistenceReady=auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
+      .catch(function(err){
+        console.warn('Firebase session persistence error:',err);
+        /* Authentication can still work if the browser disallows persistence. */
+        return true;
+      });
+
+    return persistenceReady;
+  }
+
+  function googleSignInRedirect(){
+    var provider=new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({prompt:'select_account'});
+    return ensurePersistence().then(function(){
+      return auth.signInWithRedirect(provider);
+    });
   }
 
   if(openBtn){
     openBtn.addEventListener('click',function(e){
       e.stopPropagation();
+
       if(auth && auth.currentUser){
         var show=userMenu && !userMenu.classList.contains('show');
         if(userMenu) userMenu.classList.toggle('show',show);
@@ -6639,6 +6687,7 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
   });
 
   if(userMenu) userMenu.addEventListener('click',function(e){e.stopPropagation();});
+
   document.addEventListener('click',function(){
     if(userMenu) userMenu.classList.remove('show');
     if(openBtn) openBtn.setAttribute('aria-expanded','false');
@@ -6655,13 +6704,23 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
 
   if(logoutBtn){
     logoutBtn.addEventListener('click',function(){
-      if(!auth) return;
+      if(!auth || authBusy) return;
+
+      authBusy=true;
+      if(logoutBtn) logoutBtn.disabled=true;
+      status('Signing you out...');
+
       auth.signOut().then(function(){
-        document.body.classList.remove('auth-signed-in');
-        closeModal();
-        status('Signed out successfully.');
+        /*
+         * onAuthStateChanged is the source of truth. updateUI(null)
+         * is also called here so the UI changes immediately.
+         */
         updateUI(null);
+        if(modal) modal.classList.remove('show');
+        status('Signed out successfully.');
+        resetAuthButtons();
       }).catch(function(err){
+        resetAuthButtons();
         openModal();
         status(friendlyError(err));
       });
@@ -6672,10 +6731,13 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
     form.addEventListener('submit',function(e){
       e.preventDefault();
 
+      if(authBusy) return;
+
       if(!configured){
         status('Account system is ready, but Firebase CONFIG has not been added yet.');
         return;
       }
+
       if(!auth){
         status('Authentication is not available. Please check the Firebase setup.');
         return;
@@ -6689,72 +6751,59 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
         return;
       }
 
+      if(mode==='signup' && password!==confirmInput.value){
+        status('Passwords do not match.');
+        return;
+      }
+
+      authBusy=true;
+      if(submitBtn) submitBtn.disabled=true;
+
       if(mode==='signup'){
-        if(password!==confirmInput.value){
-          status('Passwords do not match.');
-          return;
-        }
-        submitBtn.disabled=true;
         status('Creating your account...');
-        auth.createUserWithEmailAndPassword(email,password).then(function(){
-          clearAuthFields();
-          closeModal();
-          status('Account created successfully.');
-        }).catch(function(err){
-          status(err && err.message ? err.message : friendlyError(err));
-        }).finally(function(){
-          submitBtn.disabled=false;
-        });
+
+        ensurePersistence()
+          .then(function(){
+            return auth.createUserWithEmailAndPassword(email,password);
+          })
+          .then(function(){
+            clearAuthFields();
+            if(modal) modal.classList.remove('show');
+            status('Account created successfully.');
+          })
+          .catch(function(err){
+            status(friendlyError(err));
+          })
+          .finally(function(){
+            resetAuthButtons();
+          });
+
       }else{
-        submitBtn.disabled=true;
         status('Signing you in...');
-        auth.signInWithEmailAndPassword(email,password).then(function(){
-          closeModal();
-          status('Signed in successfully.');
-        }).catch(function(err){
-          status(friendlyError(err));
-        }).finally(function(){
-          submitBtn.disabled=false;
-        });
+
+        ensurePersistence()
+          .then(function(){
+            return auth.signInWithEmailAndPassword(email,password);
+          })
+          .then(function(){
+            clearAuthFields();
+            if(modal) modal.classList.remove('show');
+            status('Signed in successfully.');
+          })
+          .catch(function(err){
+            status(friendlyError(err));
+          })
+          .finally(function(){
+            resetAuthButtons();
+          });
       }
     });
   }
 
-  /*
-   * GOOGLE SIGN-IN ENVIRONMENT FIX
-   * ------------------------------------------------------------
-   * Firebase Web Authentication cannot run from a file:// URL.
-   * GitHub Pages/normal hosting uses https:// and is supported.
-   * Keep the existing UI and popup flow, but:
-   *   1) give a clear message when the HTML is opened locally;
-   *   2) use signInWithRedirect as a fallback when the popup is
-   *      blocked by the browser;
-   *   3) handle the Firebase redirect result after returning.
-   */
-  function firebaseWebEnvironmentOK(){
-    var protocol=String(window.location.protocol||'').toLowerCase();
-    return protocol==='http:' || protocol==='https:';
-  }
-
-  function storageAvailable(){
-    try{
-      var key='__resizeimage_arnc_storage_test__';
-      window.localStorage.setItem(key,'1');
-      window.localStorage.removeItem(key);
-      return true;
-    }catch(e){
-      return false;
-    }
-  }
-
-  function googleSignInRedirect(){
-    var provider=new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({prompt:'select_account'});
-    return auth.signInWithRedirect(provider);
-  }
-
   if(googleBtn){
     googleBtn.addEventListener('click',function(){
+      if(authBusy) return;
+
       if(!configured || !auth){
         status('Add your Firebase CONFIG first, then Google Sign-In will work.');
         return;
@@ -6770,94 +6819,89 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
         return;
       }
 
+      authBusy=true;
       googleBtn.disabled=true;
       status('Opening Google sign-in...');
 
       var provider=new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({prompt:'select_account'});
 
-      auth.signInWithPopup(provider).then(function(){
-        closeModal();
-      }).catch(function(err){
-        var code=(err&&err.code)||'';
+      ensurePersistence()
+        .then(function(){
+          return auth.signInWithPopup(provider);
+        })
+        .then(function(){
+          clearAuthFields();
+          if(modal) modal.classList.remove('show');
+          status('Signed in successfully with Google.');
+        })
+        .catch(function(err){
+          var code=(err&&err.code)||'';
 
-        if(code==='auth/popup-blocked' || code==='auth/cancelled-popup-request'){
-          status('Popup blocked. Redirecting to Google sign-in...');
-          googleSignInRedirect().catch(function(redirectErr){
-            status(friendlyError(redirectErr));
-            googleBtn.disabled=false;
-          });
-          return;
-        }
+          if(code==='auth/popup-blocked' || code==='auth/cancelled-popup-request'){
+            status('Popup blocked. Redirecting to Google sign-in...');
+            return googleSignInRedirect();
+          }
 
-        if(code==='auth/operation-not-supported-in-this-environment'){
-          status('❌ This page is not running in a supported web environment. Please open the GitHub Pages https:// website.');
-          googleBtn.disabled=false;
-          return;
-        }
-
-        status(friendlyError(err));
-        googleBtn.disabled=false;
-      });
+          status(friendlyError(err));
+        })
+        .catch(function(err){
+          status(friendlyError(err));
+        })
+        .finally(function(){
+          resetAuthButtons();
+        });
     });
   }
 
-  /* Complete Google sign-in when Firebase redirects back to this page. */
-  if(auth && typeof auth.getRedirectResult==='function'){
-    auth.getRedirectResult().then(function(result){
-      if(result && result.user){
-        closeModal();
-        status('Signed in successfully with Google.');
-      }
-    }).catch(function(err){
-      if(err && err.code){
-        status(friendlyError(err));
-      }
-    });
-  }
-
-
-
-
-  /* Password recovery: send a real Firebase email reset link. */
   if(emailResetBtn){
     emailResetBtn.addEventListener('click',function(){
       if(!configured || !auth){
         status('Email password reset is not available. Please check the Firebase setup.');
         return;
       }
+
       var email=(emailInput && emailInput.value ? emailInput.value : '').trim();
+
       if(!email){
         status('Please enter your account email address first.');
         if(emailInput) emailInput.focus();
         return;
       }
+
       if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
         status('Please enter a valid email address.');
         if(emailInput) emailInput.focus();
         return;
       }
+
       emailResetBtn.disabled=true;
       status('Sending password reset email...');
-      auth.sendPasswordResetEmail(email).then(function(){
-        status('Password reset email sent. Please check your inbox and Spam/Junk folder.');
-      }).catch(function(err){
-        var code=(err&&err.code)||'';
-        var resetMap={
-          'auth/invalid-email':'Please enter a valid email address.',
-          'auth/user-not-found':'No account was found with this email.',
-          'auth/user-disabled':'This account has been disabled.',
-          'auth/too-many-requests':'Too many reset requests. Please wait and try again.',
-          'auth/network-request-failed':'Network error. Please check your internet connection.'
-        };
-        status(resetMap[code] || friendlyError(err));
-      }).finally(function(){
-        emailResetBtn.disabled=false;
-      });
+
+      ensurePersistence()
+        .then(function(){
+          return auth.sendPasswordResetEmail(email);
+        })
+        .then(function(){
+          status('Password reset email sent. Please check your inbox and Spam/Junk folder.');
+        })
+        .catch(function(err){
+          var code=(err&&err.code)||'';
+          var resetMap={
+            'auth/invalid-email':'Please enter a valid email address.',
+            'auth/user-not-found':'No account was found with this email.',
+            'auth/user-disabled':'This account has been disabled.',
+            'auth/too-many-requests':'Too many reset requests. Please wait and try again.',
+            'auth/network-request-failed':'Network error. Please check your internet connection.'
+          };
+          status(resetMap[code] || friendlyError(err));
+        })
+        .finally(function(){
+          if(emailResetBtn) emailResetBtn.disabled=false;
+        });
     });
   }
 
-  /* Google-account recovery: open Google's official recovery page. */
   if(googleRecoveryBtn){
     googleRecoveryBtn.addEventListener('click',function(){
       window.open('https://accounts.google.com/signin/recovery','_blank','noopener,noreferrer');
@@ -6868,32 +6912,53 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
 
   if(!configured){
     updateUI(null);
-    /* The UI remains visible; only authentication calls wait for Firebase config. */
   }else{
     try{
-      if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      if(!firebase.apps.length){
+        firebase.initializeApp(FIREBASE_CONFIG);
+      }
+
       auth=firebase.auth();
 
       /*
-       * SESSION persistence: a normal page reload keeps the login active.
-       * The Firebase account remains registered permanently. When the
-       * browser/tab session ends, the user must Sign In again.
+       * Set SESSION persistence before the first sign-in and keep the
+       * same Firebase Auth instance alive after logout. Do not create
+       * a second auth instance after logout.
        */
-      auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
-        .then(function(){
-          auth.onAuthStateChanged(function(user){
-            updateUI(user);
-            if(!user) clearAuthFields();
-          });
-        })
+      persistenceReady=auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
         .catch(function(err){
-          console.error('Firebase session persistence error:',err);
-          auth.onAuthStateChanged(function(user){
-            updateUI(user);
-            if(!user) clearAuthFields();
-          });
+          console.warn('Firebase session persistence error:',err);
+          return true;
         });
+
+      auth.onAuthStateChanged(function(user){
+        updateUI(user);
+      });
+
+      /*
+       * Firebase must be initialized before getRedirectResult().
+       * This fixes Google redirect sign-in as well.
+       */
+      if(typeof auth.getRedirectResult==='function'){
+        auth.getRedirectResult()
+          .then(function(result){
+            if(result && result.user){
+              clearAuthFields();
+              if(modal) modal.classList.remove('show');
+              status('Signed in successfully with Google.');
+              resetAuthButtons();
+            }
+          })
+          .catch(function(err){
+            if(err && err.code){
+              status(friendlyError(err));
+            }
+            resetAuthButtons();
+          });
+      }
+
     }catch(err){
+      auth=null;
       updateUI(null);
       status('Firebase setup error. Please check your project configuration.');
       console.error('Firebase Auth initialization error:',err);
