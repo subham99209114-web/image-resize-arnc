@@ -4408,14 +4408,14 @@ function batchApplyImageToIndex(index,bg){
 /* FAST BACKGROUND REMOVAL ENGINE */
 var __bgRemovalModulePromise=null;
 
-/* PERSON/CLOTHING PROTECTION v4
-   Use MediaPipe's dedicated binary SelfieSegmenter as the primary protection
-   mask for human photos.  The previous multiclass-only pass could correctly
-   keep the scarf/face while still losing dark or low-contrast clothing.
-   SelfieSegmenter outputs one dedicated PERSON class, so clothing is protected
-   together with the whole person.  The existing ISNet result remains the
-   background-removal mask; this pass only restores pixels identified as part
-   of a person.  Batch and mouse removal are untouched. */
+/* PERSON/CLOTHING PROTECTION v3
+   IMG.LY's ISNet model is general-purpose. On very light clothing/scarves that
+   are close to the background color, it can classify part of the clothing as
+   background. The MediaPipe SelfieMulticlass model explicitly has separate
+   classes for hair, skin, clothes and accessories, so we use its person mask
+   only as a protection mask and combine it with the existing AI result.
+   This is intentionally limited to the single-image Remove Background action;
+   the existing batch and mouse-removal functions are untouched. */
 var __personSegmenterPromise=null;
 async function getPersonClothingSegmenter(){
   if(!__personSegmenterPromise){
@@ -4424,11 +4424,9 @@ async function getPersonClothingSegmenter(){
         var FilesetResolver=mp.FilesetResolver,ImageSegmenter=mp.ImageSegmenter;
         if(!FilesetResolver||!ImageSegmenter)throw new Error('MediaPipe ImageSegmenter unavailable');
         var vision=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm');
-        /* Binary person segmentation is intentionally used here instead of
-           relying only on the multiclass clothes label. */
         var segmenter=await ImageSegmenter.createFromOptions(vision,{
           baseOptions:{
-            modelAssetPath:'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite'
+            modelAssetPath:'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite'
           },
           runningMode:'IMAGE',
           outputCategoryMask:true,
@@ -4451,53 +4449,79 @@ async function protectPersonClothingAlpha(sourceImage,baseAlpha,width,height){
 
     var mw=(mask&&mask.width)||256,mh=(mask&&mask.height)||256;
     var md=mask?mask.getAsUint8Array():null;
-    var conf=null;
-    if(Array.isArray(confs)&&confs.length){
-      try{conf=confs[0].getAsFloat32Array();}catch(e){conf=null;}
+    var confidenceArrays=[];
+    if(Array.isArray(confs)){
+      for(var ci=0;ci<confs.length;ci++){
+        try{confidenceArrays[ci]=confs[ci].getAsFloat32Array();}catch(e){confidenceArrays[ci]=null;}
+      }
     }
-    var out=new Uint8ClampedArray(baseAlpha.length);out.set(baseAlpha);
 
     /*
-      Build a person confidence map.  Category 1 is PERSON and confidence
-      values are preferred when available. A small neighbourhood sample makes
-      the 256px model less likely to punch holes through sleeves/scarves.
+      V5 — conservative clothing repair.
+      The V4 change was too aggressive: the binary selfie model can cover only
+      part of a wide/portrait image, so restoring its whole mask can destroy
+      the original ISNet cutout.  Keep the proven V3 multiclass model, but
+      repair only person pixels that are connected to the foreground already
+      detected by ISNet.  This closes holes in scarves/clothes without pulling
+      distant background pixels back into the subject.
     */
-    function personScore(mx,my){
-      var best=0;
-      for(var yy=-2;yy<=2;yy++){
-        var py=my+yy;if(py<0||py>=mh)continue;
-        for(var xx=-2;xx<=2;xx++){
-          var px=mx+xx;if(px<0||px>=mw)continue;
-          var idx=py*mw+px;
-          if(md&&md[idx]===1)best=Math.max(best,0.55);
-          if(conf&&idx<conf.length){
-            var v=conf[idx];
-            if(v>best)best=v;
-          }
-        }
-      }
-      return best;
-    }
-
     var low=new Float32Array(mw*mh);
-    var personPixels=0;
     for(var ly=0;ly<mh;ly++){
       for(var lx=0;lx<mw;lx++){
         var idx=ly*mw+lx,score=0;
-        if(md&&md[idx]===1)score=0.55;
-        if(conf&&idx<conf.length)score=Math.max(score,conf[idx]);
+        if(md){
+          var cat=md[idx];
+          if(cat>=1&&cat<=5)score=0.80;
+        }
+        /* Classes 1-5 are hair, body-skin, face-skin, clothes, accessories. */
+        for(var k=1;k<=5;k++){
+          var arr=confidenceArrays[k];
+          if(arr&&idx<arr.length)score=Math.max(score,arr[idx]);
+        }
         low[idx]=score;
-        if(score>=0.35)personPixels++;
       }
     }
 
-    /* If the image contains no meaningful person mask, leave ISNet untouched
-       so animals/products/objects continue to behave exactly as before. */
-    if(personPixels < Math.max(20,Math.round(mw*mh*0.002))){
-      if(result&&typeof result.close==='function')result.close();
-      return baseAlpha;
+    /* Downsample the existing ISNet alpha to the segmentation resolution.
+       Max alpha is used so a tiny surviving part of clothing can seed the
+       connected repair region. */
+    var seed=new Uint8Array(mw*mh);
+    for(var ly2=0;ly2<mh;ly2++){
+      var y0=Math.floor(ly2*height/mh),y1=Math.max(y0+1,Math.floor((ly2+1)*height/mh));
+      y1=Math.min(height,y1);
+      for(var lx2=0;lx2<mw;lx2++){
+        var x0=Math.floor(lx2*width/mw),x1=Math.max(x0+1,Math.floor((lx2+1)*width/mw));
+        x1=Math.min(width,x1);
+        var found=false;
+        for(var sy=y0;sy<y1&&!found;sy++){
+          var row=sy*width;
+          for(var sx=x0;sx<x1;sx++){
+            if(baseAlpha[row+sx]>=80){found=true;break;}
+          }
+        }
+        if(found && low[ly2*mw+lx2]>=0.18)seed[ly2*mw+lx2]=1;
+      }
     }
 
+    /* Grow only through reasonably strong person/clothing pixels. This keeps
+       separate background islands out of the repaired alpha. */
+    var connected=new Uint8Array(mw*mh),queue=new Int32Array(mw*mh),head=0,tail=0;
+    for(var sy2=0;sy2<mh;sy2++){
+      for(var sx2=0;sx2<mw;sx2++){
+        var sp=sy2*mw+sx2;
+        if(seed[sp]){connected[sp]=1;queue[tail++]=sp;}
+      }
+    }
+    while(head<tail){
+      var p=queue[head++],px=p%mw,py=Math.floor(p/mw);
+      var n0=p-1,n1=p+1,n2=p-mw,n3=p+mw;
+      if(px>0 && !connected[n0] && low[n0]>=0.28){connected[n0]=1;queue[tail++]=n0;}
+      if(px<mw-1 && !connected[n1] && low[n1]>=0.28){connected[n1]=1;queue[tail++]=n1;}
+      if(py>0 && !connected[n2] && low[n2]>=0.28){connected[n2]=1;queue[tail++]=n2;}
+      if(py<mh-1 && !connected[n3] && low[n3]>=0.28){connected[n3]=1;queue[tail++]=n3;}
+    }
+
+    var out=new Uint8ClampedArray(baseAlpha.length);out.set(baseAlpha);
     function sampleLow(fx,fy){
       fx=Math.max(0,Math.min(mw-1,fx));fy=Math.max(0,Math.min(mh-1,fy));
       var x0=Math.floor(fx),y0=Math.floor(fy),x1=Math.min(mw-1,x0+1),y1=Math.min(mh-1,y0+1);
@@ -4505,15 +4529,24 @@ async function protectPersonClothingAlpha(sourceImage,baseAlpha,width,height){
       var a=low[y0*mw+x0],b=low[y0*mw+x1],c=low[y1*mw+x0],d=low[y1*mw+x1];
       return a*(1-tx)*(1-ty)+b*tx*(1-ty)+c*(1-tx)*ty+d*tx*ty;
     }
+    function sampleConnected(fx,fy){
+      fx=Math.max(0,Math.min(mw-1,fx));fy=Math.max(0,Math.min(mh-1,fy));
+      var x=Math.round(fx),y=Math.round(fy);
+      return connected[y*mw+x]===1;
+    }
 
     for(var y=0;y<height;y++){
       var fy=((y+0.5)*mh/height)-0.5;
       for(var x=0;x<width;x++){
-        var score=sampleLow(((x+0.5)*mw/width)-0.5,fy);
-        if(score>=0.35){
-          /* Strong person evidence always wins over an ISNet hole. */
-          var pos=y*width+x;
+        var fx=((x+0.5)*mw/width)-0.5;
+        var pos=y*width+x;
+        var score=sampleLow(fx,fy);
+        if(score>=0.52 && sampleConnected(fx,fy)){
+          /* Restore confidently classified clothing/person holes. */
           out[pos]=255;
+        }else if(score>=0.30 && sampleConnected(fx,fy) && baseAlpha[pos]>0){
+          /* Preserve anti-aliased edges without creating a hard halo. */
+          out[pos]=Math.max(baseAlpha[pos],220);
         }
       }
     }
@@ -4521,11 +4554,10 @@ async function protectPersonClothingAlpha(sourceImage,baseAlpha,width,height){
     if(result&&typeof result.close==='function')result.close();
     return out;
   }catch(err){
-    console.warn('Person/clothing protection unavailable; keeping ISNet result.',err);
+    console.warn('Conservative clothing protection unavailable; keeping ISNet result.',err);
     return baseAlpha;
   }
 }
-
 function getBackgroundRemovalEngine(){
   if(!__bgRemovalModulePromise){
     __bgRemovalModulePromise=import('https://esm.sh/@imgly/background-removal@1.7.0').then(function(mod){
