@@ -4443,30 +4443,56 @@ async function refineForegroundEdges(blob){
     var ox=originalCanvas.getContext('2d',{willReadFrequently:true});
     ox.drawImage(originalImage,0,0,w,h);
     var src=ox.getImageData(0,0,w,h).data;
-    var radius=Math.max(2,Math.min(4,Math.round(Math.max(w,h)/700)));
+    /* The previous 2-4px rescue was too conservative for a limb that the
+       segmentation model can erase as one connected patch.  Keep the UI and
+       normal cutout untouched, but recover human-skin pixels that are close to
+       the detected person.  This specifically protects small hands/fingers
+       and exposed arms without turning the whole background opaque. */
+    var radius=Math.max(20,Math.min(36,Math.round(Math.max(w,h)/45)));
     var alpha=new Uint8ClampedArray(w*h);
     for(var p=0;p<w*h;p++) alpha[p]=od[p*4+3];
     function skinLike(i){
       var r=src[i],g=src[i+1],b=src[i+2];
       var mx=Math.max(r,g,b),mn=Math.min(r,g,b);
-      if(mx<35 || mx-mn<8)return false;
-      return r>=g*1.03 && g>=b*1.01 && (r-g)>=4 && (r-b)>=8;
+      if(mx<45 || mx-mn<10)return false;
+      /* broad warm-skin test; also accepts darker skin and avoids pale fabric */
+      var warm=(r>=g*1.015 && g>=b*0.99 && (r-b)>=7);
+      var brown=(r>=g*1.02 && g>=b*1.00 && r>70 && g>35);
+      return warm || brown;
     }
+    function nearForeground(px,py,rad){
+      var r2=rad*rad;
+      for(var dy=-rad;dy<=rad;dy++){
+        var ny=py+dy;if(ny<0||ny>=h)continue;
+        for(var dx=-rad;dx<=rad;dx++){
+          if(dx*dx+dy*dy>r2)continue;
+          var nx=px+dx;if(nx<0||nx>=w)continue;
+          if(alpha[ny*w+nx]>=150)return true;
+        }
+      }
+      return false;
+    }
+    /* First pass: restore skin pixels close to the model's subject mask. */
     for(var yy=0;yy<h;yy++){
       for(var xx=0;xx<w;xx++){
         var p=yy*w+xx,di=p*4;
-        if(alpha[p]>24)continue;
-        var found=false;
-        for(var dy=-radius;dy<=radius&&!found;dy++){
-          var ny=yy+dy;if(ny<0||ny>=h)continue;
-          for(var dx=-radius;dx<=radius;dx++){
-            if(dx*dx+dy*dy>radius*radius)continue;
-            var nx=xx+dx;if(nx<0||nx>=w)continue;
-            if(alpha[ny*w+nx]>=150){found=true;break;}
+        if(alpha[p]>24 || !skinLike(di))continue;
+        if(nearForeground(xx,yy,radius)) od[di+3]=Math.max(od[di+3],205);
+      }
+    }
+    /* Second pass: grow through adjacent skin pixels so a whole erased hand
+       or forearm can be recovered even when its middle is >radius from the
+       original mask.  Limit growth to a small number of iterations. */
+    for(var pass=0;pass<4;pass++){
+      for(var yy2=1;yy2<h-1;yy2++){
+        for(var xx2=1;xx2<w-1;xx2++){
+          var q=yy2*w+xx2,qi=q*4;
+          if(od[qi+3]>24 || !skinLike(qi))continue;
+          var linked=false;
+          for(var gy=-1;gy<=1&&!linked;gy++)for(var gx=-1;gx<=1;gx++){
+            if(od[((yy2+gy)*w)+(xx2+gx)]>=150){linked=true;break;}
           }
-        }
-        if(found && skinLike(di)){
-          od[di+3]=Math.max(od[di+3],190);
+          if(linked)od[qi+3]=200;
         }
       }
     }
