@@ -4408,7 +4408,7 @@ function batchApplyImageToIndex(index,bg){
 /* FAST BACKGROUND REMOVAL ENGINE */
 var __bgRemovalModulePromise=null;
 
-/* PERSON/CLOTHING PROTECTION
+/* PERSON/CLOTHING PROTECTION v3
    IMG.LY's ISNet model is general-purpose. On very light clothing/scarves that
    are close to the background color, it can classify part of the clothing as
    background. The MediaPipe SelfieMulticlass model explicitly has separate
@@ -4430,7 +4430,7 @@ async function getPersonClothingSegmenter(){
           },
           runningMode:'IMAGE',
           outputCategoryMask:true,
-          outputConfidenceMasks:false
+          outputConfidenceMasks:true
         });
         return segmenter;
       })
@@ -4519,19 +4519,34 @@ async function protectPersonClothingAlpha(sourceImage,baseAlpha,width,height){
       return a*(1-tx)*(1-ty)+b*tx*(1-ty)+c*(1-tx)*ty+d*tx*ty;
     }
 
-    /* Find the approximate ISNet foreground bounds. This keeps the repair
-       from turning large areas of a white background into foreground. */
+    /*
+      CRITICAL CLOTHING FIX v3:
+      Do NOT limit the repair area to the ISNet alpha bounding box.
+      If ISNet has already removed an entire shirt/scarf/torso section, that
+      section is absent from baseAlpha and therefore an ISNet-derived bounding
+      box can end above the missing clothing. The protection pass would then
+      never get a chance to restore it.
+
+      Instead, calculate the repair bounds from the MediaPipe person/clothing
+      mask itself. MediaPipe's selfie_multiclass model defines classes 1-5 as
+      person-related pixels (hair, body-skin, face-skin, clothes, accessories).
+      This lets a completely erased clothing region be restored.
+    */
     var minX=width,minY=height,maxX=-1,maxY=-1;
-    for(var by=0;by<height;by+=3){
-      for(var bx=0;bx<width;bx+=3){
-        if(baseAlpha[by*width+bx]>35){
-          if(bx<minX)minX=bx;if(bx>maxX)maxX=bx;if(by<minY)minY=by;if(by>maxY)maxY=by;
+    for(var ly2=0;ly2<pmh;ly2++){
+      for(var lx2=0;lx2<pmw;lx2++){
+        if(low[ly2*pmw+lx2]>=0.48){
+          var rx=Math.round((lx2+0.5)*width/pmw-0.5);
+          var ry=Math.round((ly2+0.5)*height/pmh-0.5);
+          if(rx<minX)minX=rx;if(rx>maxX)maxX=rx;
+          if(ry<minY)minY=ry;if(ry>maxY)maxY=ry;
         }
       }
     }
     if(maxX<0||maxY<0)return baseAlpha;
-    var padX=Math.max(18,Math.round(width*0.035));
-    var padY=Math.max(18,Math.round(height*0.035));
+
+    var padX=Math.max(12,Math.round(width*0.02));
+    var padY=Math.max(12,Math.round(height*0.02));
     minX=Math.max(0,minX-padX);maxX=Math.min(width-1,maxX+padX);
     minY=Math.max(0,minY-padY);maxY=Math.min(height-1,maxY+padY);
 
@@ -4543,10 +4558,15 @@ async function protectPersonClothingAlpha(sourceImage,baseAlpha,width,height){
         var score=sampleLow(((x+0.5)*pmw/width)-0.5,fy);
         var pos=y*width+x;
         var a=baseAlpha[pos];
-        /* Strong clothing/person confidence restores transparent holes.
-           Medium confidence restores only if close to existing foreground. */
+
+        /*
+          High-confidence person/clothing pixels are always kept opaque.
+          Medium-confidence pixels are repaired only when there is already
+          some foreground evidence, which protects edges without flooding
+          the surrounding background.
+        */
         if(score>=0.48){
-          if(a<255)a=255;
+          a=255;
         }else if(score>=0.25 && a>0){
           a=Math.max(a,245);
         }
