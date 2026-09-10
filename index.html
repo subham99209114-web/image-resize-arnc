@@ -1330,7 +1330,7 @@ No image upload is required for local image processing.
   <b>Any Image Format / Extension</b>
 </label>
 
-<input accept='*/*' id='fileInput' type='file'/>
+<input accept='image/*,.jpg,.jpeg,.png,.webp,.heic,.heif,.tif,.tiff' id='fileInput' type='file' capture='environment'/>
 
 <label class='upload multiUpload' for='multiFileInput' id='multiUploadLabel' role='button' tabindex='0'>
   📚 <b>Select Multiple Images</b>
@@ -1366,7 +1366,7 @@ No image upload is required for local image processing.
 
   <h2 id='signInRequirementText' style='text-align: center; color: pink;'>&#9432;To use the &#8220;Additional/Professional,Optional &#8595;&#8221; options, you need to 👤 Sign In.</h2>  
 
-<input accept='*/*' id='multiFileInput' multiple='multiple' type='file'/>
+<input accept='image/*,.jpg,.jpeg,.png,.webp,.heic,.heif,.tif,.tiff' id='multiFileInput' multiple='multiple' type='file'/>
 <div id='postUploadTools' style='display:none;'>
 <div class='additionalToolsToggle' id='showAdditionalToggle' style='display:none;'>
   <label class='additionalToolsLabel'>
@@ -2550,44 +2550,165 @@ function readImageUniversal(file, done){
   var ext=universalExtension(file);
   var mime=String(file.type||'').toLowerCase();
 
-  /* Special formats first because some browsers report an empty/unknown MIME. */
+  /*
+   * UNIVERSAL DECODER — compatibility fix
+   * JPG/JPEG, PNG and WEBP use the browser decoder first.
+   * HEIC/HEIF and TIFF keep their existing local CDN decoder.
+   * If the normal <img> path fails, FileReader + createImageBitmap()
+   * are tried before reporting an unsupported image.
+   */
   if(ext==='heic' || ext==='heif' || mime==='image/heic' || mime==='image/heif'){
     decodeHEICUniversal(file,done);
     return;
   }
+
   if(ext==='tif' || ext==='tiff' || mime==='image/tiff'){
     decodeTIFFUniversal(file,done);
     return;
   }
 
-  /* Native browser decoder: works from actual bytes, not just the extension. */
-  var objectUrl=URL.createObjectURL(file);
-  var img=new Image();
+  var objectUrl=null;
+  try{
+    objectUrl=URL.createObjectURL(file);
+  }catch(e){
+    objectUrl=null;
+  }
+
   var finished=false;
-  function finish(err,data){
+
+  function finish(err,data,img){
     if(finished)return;
     finished=true;
-    /* Do NOT revoke objectUrl here. The Before → After Dashboard and the
-       main preview may still be using this exact URL. It is revoked when
-       the next image is uploaded. */
-    if(!err) universalActiveObjectUrl = objectUrl;
+
+    if(!err && objectUrl){
+      /*
+       * Keep the Blob URL alive because Before/After and preview may
+       * still reference it. It is revoked when another image is loaded.
+       */
+      universalActiveObjectUrl=objectUrl;
+    }
+
     done(err,data,img);
   }
-  img.onload=function(){ finish(null,objectUrl); };
-  img.onerror=function(){
+
+  function tryCreateImageBitmapFallback(){
+    if(typeof createImageBitmap!=='function'){
+      finish(new Error('Unsupported or invalid image format.'));
+      return;
+    }
+
+    try{
+      var bitmapOptions={};
+      /*
+       * Preserve camera-photo orientation when the browser supports it.
+       * Some browsers ignore this option, which is also safe.
+       */
+      bitmapOptions.imageOrientation='from-image';
+
+      createImageBitmap(file,bitmapOptions).then(function(bitmap){
+        try{
+          var w=bitmap.width,h=bitmap.height;
+          if(!w || !h) throw new Error('Invalid image dimensions.');
+
+          var c=document.createElement('canvas');
+          c.width=w;
+          c.height=h;
+
+          var ctx=c.getContext('2d',{alpha:true});
+          if(!ctx) throw new Error('Canvas is unavailable.');
+
+          ctx.drawImage(bitmap,0,0,w,h);
+          if(typeof bitmap.close==='function') bitmap.close();
+
+          /*
+           * PNG is only the internal fallback representation.
+           * The original file remains available as originalFile.
+           */
+          var data=c.toDataURL('image/png');
+          var fallbackImg=new Image();
+
+          fallbackImg.onload=function(){
+            finish(null,data,fallbackImg);
+          };
+          fallbackImg.onerror=function(){
+            finish(new Error('Image decoder could not display this image.'));
+          };
+          fallbackImg.src=data;
+        }catch(e){
+          try{ if(typeof bitmap.close==='function') bitmap.close(); }catch(ignore){}
+          finish(e);
+        }
+      }).catch(function(){
+        finish(new Error('Unsupported or invalid image format.'));
+      });
+    }catch(e){
+      finish(e);
+    }
+  }
+
+  function tryFileReaderFallback(){
     try{
       var r=new FileReader();
+
       r.onload=function(ev){
+        var data=ev.target.result;
         var fallback=new Image();
-        fallback.onload=function(){ finish(null,ev.target.result); };
-        fallback.onerror=function(){ finish(new Error('Unsupported or invalid image format.')); };
-        fallback.src=ev.target.result;
+
+        fallback.onload=function(){
+          finish(null,data,fallback);
+        };
+
+        fallback.onerror=function(){
+          /*
+           * Important for Android/Chrome images whose MIME is empty or
+           * whose normal object URL decoder refuses the file.
+           */
+          tryCreateImageBitmapFallback();
+        };
+
+        fallback.src=data;
       };
-      r.onerror=function(){ finish(new Error('Unable to read this file.')); };
+
+      r.onerror=function(){
+        tryCreateImageBitmapFallback();
+      };
+
       r.readAsDataURL(file);
-    }catch(e){ finish(e); }
+    }catch(e){
+      tryCreateImageBitmapFallback();
+    }
+  }
+
+  if(!objectUrl){
+    tryFileReaderFallback();
+    return;
+  }
+
+  var img=new Image();
+
+  /*
+   * decode() is used where available, but onload remains the final
+   * compatibility path because older Android browsers may not expose it.
+   */
+  img.onload=function(){
+    finish(null,objectUrl,img);
   };
+
+  img.onerror=function(){
+    tryFileReaderFallback();
+  };
+
   img.src=objectUrl;
+
+  /*
+   * Some browsers can reject an image during decode() without firing
+   * the expected event promptly. This only adds a guarded fallback.
+   */
+  if(typeof img.decode==='function'){
+    img.decode().catch(function(){
+      if(!finished) tryFileReaderFallback();
+    });
+  }
 }
 
 function createImageFromData(data, done){
@@ -2714,11 +2835,7 @@ loadSingleImage(file);
 }
 );
 
-/* Keep upload working even if another Blogger script replaces the change handler. */
-fileInput.onchange=function(){
-  var file=this.files&&this.files[0];
-  if(file) loadSingleImage(file);
-};
+/* Single-image upload uses the change listener above; no duplicate onchange handler. */
 
 multiFileInput.addEventListener(
 'change',
