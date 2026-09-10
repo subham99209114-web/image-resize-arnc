@@ -2525,23 +2525,74 @@ function decodeTIFFUniversal(file, done){
   );
 }
 
-function decodeHEICUniversal(file, done){
+function decodeHEICWithLibHeif(file, done){
+  loadExternalScriptOnce(
+    'https://cdn.jsdelivr.net/npm/libheif-js@1.23.2/libheif/libheif.js',
+    'libheif',
+    function(err){
+      if(err || !window.libheif){ done(new Error('libheif decoder could not be loaded.')); return; }
+      try{
+        var reader=new FileReader();
+        reader.onload=function(){
+          try{
+            var decoder=new window.libheif.HeifDecoder();
+            var images=decoder.decode(new Uint8Array(reader.result));
+            if(!images || !images.length) throw new Error('No HEIF image found.');
+            var image=images[0];
+            var w=image.get_width(), h=image.get_height();
+            if(!w || !h) throw new Error('Invalid HEIF dimensions.');
+            var canvas=document.createElement('canvas');
+            canvas.width=w; canvas.height=h;
+            var ctx=canvas.getContext('2d');
+            var imageData=ctx.createImageData(w,h);
+            image.display(imageData,function(displayData){
+              try{
+                if(!displayData) throw new Error('HEIF display failed.');
+                ctx.putImageData(imageData,0,0);
+                done(null,canvas.toDataURL('image/png'));
+              }catch(e){ done(e); }
+            });
+          }catch(e){ done(e); }
+        };
+        reader.onerror=function(){ done(new Error('Unable to read HEIF file.')); };
+        reader.readAsArrayBuffer(file);
+      }catch(e){ done(e); }
+    }
+  );
+}
+
+function decodeHEICWithHeic2Any(file, done){
   loadExternalScriptOnce(
     'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js',
     'heic2any',
     function(err){
-      if(err || !window.heic2any){ done(new Error('HEIC/HEIF decoder could not be loaded.')); return; }
-      window.heic2any({blob:file,toType:'image/png',quality:1})
-        .then(function(result){
-          var blob=Array.isArray(result)?result[0]:result;
-          var r=new FileReader();
-          r.onload=function(){ done(null,r.result); };
-          r.onerror=function(){ done(new Error('Unable to read converted HEIC/HEIF image.')); };
-          r.readAsDataURL(blob);
-        })
-        .catch(function(e){ done(e); });
+      if(err || !window.heic2any){ done(new Error('HEIC/HEIF fallback decoder could not be loaded.')); return; }
+      try{
+        window.heic2any({blob:file,toType:'image/png',quality:1})
+          .then(function(result){
+            var blob=Array.isArray(result)?result[0]:result;
+            var r=new FileReader();
+            r.onload=function(){ done(null,r.result); };
+            r.onerror=function(){ done(new Error('Unable to read converted HEIC/HEIF image.')); };
+            r.readAsDataURL(blob);
+          })
+          .catch(function(e){ done(e); });
+      }catch(e){ done(e); }
     }
   );
+}
+
+function decodeHEICUniversal(file, done){
+  /* Mobile Chrome/Android does not natively decode HEIF and older heic2any
+     versions can fail or hang on mobile. Try libheif first, then keep the
+     existing heic2any fallback for compatibility. */
+  decodeHEICWithLibHeif(file,function(err,data){
+    if(!err && data){ done(null,data); return; }
+    decodeHEICWithHeic2Any(file,function(err2,data2){
+      if(!err2 && data2){ done(null,data2); return; }
+      done(err2 || err || new Error('HEIF/HEIC could not be decoded.'));
+    });
+  });
 }
 
 function readImageUniversal(file, done){
