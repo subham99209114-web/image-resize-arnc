@@ -4457,107 +4457,88 @@ async function protectPersonClothingAlpha(sourceImage,baseAlpha,width,height){
     }
 
     /*
-      V5 — conservative clothing repair.
-      The V4 change was too aggressive: the binary selfie model can cover only
-      part of a wide/portrait image, so restoring its whole mask can destroy
-      the original ISNet cutout.  Keep the proven V3 multiclass model, but
-      repair only person pixels that are connected to the foreground already
-      detected by ISNet.  This closes holes in scarves/clothes without pulling
-      distant background pixels back into the subject.
+      V6 — targeted CLOTHING-only repair.
+      The previous V4/V5 approaches could restore too much of the scene because
+      they treated the complete person mask as a replacement for ISNet.  That
+      is not safe for this photo: the white scarf/background are visually close.
+      Here ISNet remains the authoritative mask.  MediaPipe is used only to
+      repair pixels that its dedicated CLOTHES class (class 4) strongly supports.
+      Accessories (class 5) are allowed at a lower weight. Hair/skin are never
+      restored by this pass because ISNet already handles those reliably.
     */
     var low=new Float32Array(mw*mh);
-    for(var ly=0;ly<mh;ly++){
-      for(var lx=0;lx<mw;lx++){
-        var idx=ly*mw+lx,score=0;
-        if(md){
-          var cat=md[idx];
-          if(cat>=1&&cat<=5)score=0.80;
+    for(var y0=0;y0<mh;y0++){
+      for(var x0=0;x0<mw;x0++){
+        var q=y0*mw+x0,score=0;
+        var clothes=confidenceArrays[4];
+        var other=confidenceArrays[5];
+        if(clothes&&q<clothes.length)score=Math.max(score,clothes[q]);
+        if(other&&q<other.length)score=Math.max(score,other[q]*0.82);
+        /* Category mask is only a fallback when confidence masks are absent. */
+        if(!clothes&&!other&&md){
+          var cat=md[q];
+          if(cat===4)score=0.72;
+          else if(cat===5)score=0.58;
         }
-        /* Classes 1-5 are hair, body-skin, face-skin, clothes, accessories. */
-        for(var k=1;k<=5;k++){
-          var arr=confidenceArrays[k];
-          if(arr&&idx<arr.length)score=Math.max(score,arr[idx]);
-        }
-        low[idx]=score;
+        low[q]=score;
       }
     }
 
-    /* Downsample the existing ISNet alpha to the segmentation resolution.
-       Max alpha is used so a tiny surviving part of clothing can seed the
-       connected repair region. */
-    var seed=new Uint8Array(mw*mh);
-    for(var ly2=0;ly2<mh;ly2++){
-      var y0=Math.floor(ly2*height/mh),y1=Math.max(y0+1,Math.floor((ly2+1)*height/mh));
-      y1=Math.min(height,y1);
-      for(var lx2=0;lx2<mw;lx2++){
-        var x0=Math.floor(lx2*width/mw),x1=Math.max(x0+1,Math.floor((lx2+1)*width/mw));
-        x1=Math.min(width,x1);
-        var found=false;
-        for(var sy=y0;sy<y1&&!found;sy++){
-          var row=sy*width;
-          for(var sx=x0;sx<x1;sx++){
-            if(baseAlpha[row+sx]>=80){found=true;break;}
-          }
+    /* Find the existing ISNet foreground bounds. The repair area is deliberately
+       limited to a padded neighborhood around it, so white background elsewhere
+       cannot be restored simply because it resembles clothing. */
+    var minX=width,minY=height,maxX=-1,maxY=-1;
+    for(var yy=0;yy<height;yy++){
+      var row=yy*width;
+      for(var xx=0;xx<width;xx++){
+        if(baseAlpha[row+xx]>=100){
+          if(xx<minX)minX=xx;if(xx>maxX)maxX=xx;
+          if(yy<minY)minY=yy;if(yy>maxY)maxY=yy;
         }
-        if(found && low[ly2*mw+lx2]>=0.18)seed[ly2*mw+lx2]=1;
       }
     }
+    if(maxX<0||maxY<0)return baseAlpha;
 
-    /* Grow only through reasonably strong person/clothing pixels. This keeps
-       separate background islands out of the repaired alpha. */
-    var connected=new Uint8Array(mw*mh),queue=new Int32Array(mw*mh),head=0,tail=0;
-    for(var sy2=0;sy2<mh;sy2++){
-      for(var sx2=0;sx2<mw;sx2++){
-        var sp=sy2*mw+sx2;
-        if(seed[sp]){connected[sp]=1;queue[tail++]=sp;}
-      }
-    }
-    while(head<tail){
-      var p=queue[head++],px=p%mw,py=Math.floor(p/mw);
-      var n0=p-1,n1=p+1,n2=p-mw,n3=p+mw;
-      if(px>0 && !connected[n0] && low[n0]>=0.28){connected[n0]=1;queue[tail++]=n0;}
-      if(px<mw-1 && !connected[n1] && low[n1]>=0.28){connected[n1]=1;queue[tail++]=n1;}
-      if(py>0 && !connected[n2] && low[n2]>=0.28){connected[n2]=1;queue[tail++]=n2;}
-      if(py<mh-1 && !connected[n3] && low[n3]>=0.28){connected[n3]=1;queue[tail++]=n3;}
+    var padX=Math.max(32,Math.round(width*0.08));
+    var padY=Math.max(32,Math.round(height*0.10));
+    minX=Math.max(0,minX-padX);maxX=Math.min(width-1,maxX+padX);
+    minY=Math.max(0,minY-padY);maxY=Math.min(height-1,maxY+padY);
+
+    function sampleLow(fx,fy){
+      fx=Math.max(0,Math.min(mw-1,fx));fy=Math.max(0,Math.min(mh-1,fy));
+      var x=Math.round(fx),y=Math.round(fy);
+      return low[y*mw+x];
     }
 
     var out=new Uint8ClampedArray(baseAlpha.length);out.set(baseAlpha);
-    function sampleLow(fx,fy){
-      fx=Math.max(0,Math.min(mw-1,fx));fy=Math.max(0,Math.min(mh-1,fy));
-      var x0=Math.floor(fx),y0=Math.floor(fy),x1=Math.min(mw-1,x0+1),y1=Math.min(mh-1,y0+1);
-      var tx=fx-x0,ty=fy-y0;
-      var a=low[y0*mw+x0],b=low[y0*mw+x1],c=low[y1*mw+x0],d=low[y1*mw+x1];
-      return a*(1-tx)*(1-ty)+b*tx*(1-ty)+c*(1-tx)*ty+d*tx*ty;
-    }
-    function sampleConnected(fx,fy){
-      fx=Math.max(0,Math.min(mw-1,fx));fy=Math.max(0,Math.min(mh-1,fy));
-      var x=Math.round(fx),y=Math.round(fy);
-      return connected[y*mw+x]===1;
-    }
-
     for(var y=0;y<height;y++){
+      if(y<minY||y>maxY)continue;
       var fy=((y+0.5)*mh/height)-0.5;
       for(var x=0;x<width;x++){
-        var fx=((x+0.5)*mw/width)-0.5;
+        if(x<minX||x>maxX)continue;
+        var score=sampleLow(((x+0.5)*mw/width)-0.5,fy);
         var pos=y*width+x;
-        var score=sampleLow(fx,fy);
-        if(score>=0.52 && sampleConnected(fx,fy)){
-          /* Restore confidently classified clothing/person holes. */
-          out[pos]=255;
-        }else if(score>=0.30 && sampleConnected(fx,fy) && baseAlpha[pos]>0){
-          /* Preserve anti-aliased edges without creating a hard halo. */
-          out[pos]=Math.max(baseAlpha[pos],220);
+        var a=baseAlpha[pos];
+        /* Strong clothes evidence can repair a completely missing clothing pixel. */
+        if(score>=0.68){
+          a=255;
+        }else if(score>=0.48){
+          /* For medium confidence, only strengthen an existing/nearby foreground
+             pixel. This avoids turning broad white background regions opaque. */
+          if(a>0)a=Math.max(a,235);
         }
+        out[pos]=a;
       }
     }
 
     if(result&&typeof result.close==='function')result.close();
     return out;
   }catch(err){
-    console.warn('Conservative clothing protection unavailable; keeping ISNet result.',err);
+    console.warn('Targeted clothing protection unavailable; keeping ISNet result.',err);
     return baseAlpha;
   }
 }
+
 function getBackgroundRemovalEngine(){
   if(!__bgRemovalModulePromise){
     __bgRemovalModulePromise=import('https://esm.sh/@imgly/background-removal@1.7.0').then(function(mod){
