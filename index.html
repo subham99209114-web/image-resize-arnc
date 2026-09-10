@@ -6635,6 +6635,13 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
 
   function ensurePersistence(){
     if(!auth) return Promise.reject(new Error('Authentication is not available.'));
+
+    /*
+     * IMPORTANT RE-LOGIN FIX:
+     * Never permanently cache a failed/old persistence promise.
+     * After logout persistenceReady is cleared, so the next sign-in
+     * gets a fresh Firebase persistence setup.
+     */
     if(persistenceReady) return persistenceReady;
 
     persistenceReady=auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
@@ -6710,20 +6717,38 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
       if(logoutBtn) logoutBtn.disabled=true;
       status('Signing you out...');
 
-      auth.signOut().then(function(){
-        /*
-         * onAuthStateChanged is the source of truth. updateUI(null)
-         * is also called here so the UI changes immediately.
-         */
-        updateUI(null);
-        if(modal) modal.classList.remove('show');
-        status('Signed out successfully.');
-        resetAuthButtons();
-      }).catch(function(err){
-        resetAuthButtons();
-        openModal();
-        status(friendlyError(err));
-      });
+      /*
+       * Use the SAME Firebase Auth instance for every login/logout cycle.
+       * Do not initialize Firebase again and do not replace the auth object.
+       */
+      auth.signOut()
+        .then(function(){
+          /*
+           * Firebase onAuthStateChanged remains the source of truth.
+           * updateUI(null) also makes the signed-out UI immediate.
+           */
+          updateUI(null);
+          if(modal) modal.classList.remove('show');
+          if(userMenu) userMenu.classList.remove('show');
+          if(openBtn) openBtn.setAttribute('aria-expanded','false');
+          status('Signed out successfully.');
+        })
+        .catch(function(err){
+          openModal();
+          status(friendlyError(err));
+        })
+        .finally(function(){
+          /*
+           * CRITICAL:
+           * Clear the cached persistence promise after EVERY logout.
+           * This prevents the next Sign In from being blocked by a
+           * stale promise/state from the previous session.
+           */
+          persistenceReady=null;
+          authBusy=false;
+          if(logoutBtn) logoutBtn.disabled=false;
+          resetAuthButtons();
+        });
     });
   }
 
@@ -6781,6 +6806,12 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
       }else{
         status('Signing you in...');
 
+        /*
+         * Re-login safety: if Firebase is already signed out, make sure
+         * the persistence setup for this new login cycle is fresh.
+         */
+        if(!auth.currentUser) persistenceReady=null;
+
         ensurePersistence()
           .then(function(){
             return auth.signInWithEmailAndPassword(email,password);
@@ -6825,6 +6856,12 @@ html[data-theme='dark'] .utilityMenu button{color:#fff!important}
 
       var provider=new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({prompt:'select_account'});
+
+      /*
+       * Re-login safety for Google: after logout, prepare a fresh
+       * persistence operation before opening the next sign-in.
+       */
+      if(!auth.currentUser) persistenceReady=null;
 
       ensurePersistence()
         .then(function(){
