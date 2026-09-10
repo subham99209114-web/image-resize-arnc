@@ -4449,6 +4449,19 @@ async function protectPersonClothingAlpha(sourceImage,baseAlpha,width,height){
 
     var mw=(mask&&mask.width)||256,mh=(mask&&mask.height)||256;
     var md=mask?mask.getAsUint8Array():null;
+    var out=new Uint8ClampedArray(baseAlpha.length);out.set(baseAlpha);
+
+    /*
+      IMPORTANT CLOTHING FIX:
+      The previous protection pass used only the 256px category mask and made
+      every detected clothes pixel fully opaque. That can still miss very light
+      / semi-transparent fabric because the low-resolution argmax may choose
+      background. This version also reads the model's per-class confidence.
+      A pixel is protected when the model has meaningful confidence that it is
+      hair/skin/clothes/accessory, and the protection is expanded only around
+      the existing ISNet foreground. This prevents white background from being
+      pulled back while restoring white scarves, shirts and sleeves.
+    */
     var confidenceArrays=[];
     if(Array.isArray(confs)){
       for(var ci=0;ci<confs.length;ci++){
@@ -4456,76 +4469,106 @@ async function protectPersonClothingAlpha(sourceImage,baseAlpha,width,height){
       }
     }
 
-    /*
-      V6 — targeted CLOTHING-only repair.
-      The previous V4/V5 approaches could restore too much of the scene because
-      they treated the complete person mask as a replacement for ISNet.  That
-      is not safe for this photo: the white scarf/background are visually close.
-      Here ISNet remains the authoritative mask.  MediaPipe is used only to
-      repair pixels that its dedicated CLOTHES class (class 4) strongly supports.
-      Accessories (class 5) are allowed at a lower weight. Hair/skin are never
-      restored by this pass because ISNet already handles those reliably.
-    */
-    var low=new Float32Array(mw*mh);
-    for(var y0=0;y0<mh;y0++){
-      for(var x0=0;x0<mw;x0++){
-        var q=y0*mw+x0,score=0;
-        var clothes=confidenceArrays[4];
-        var other=confidenceArrays[5];
-        if(clothes&&q<clothes.length)score=Math.max(score,clothes[q]);
-        if(other&&q<other.length)score=Math.max(score,other[q]*0.82);
-        /* Category mask is only a fallback when confidence masks are absent. */
-        if(!clothes&&!other&&md){
-          var cat=md[q];
-          if(cat===4)score=0.72;
-          else if(cat===5)score=0.58;
+    function personScore(mx,my){
+      var best=0;
+      /* Sample a small neighborhood to compensate for the 256px model. */
+      for(var yy=-2;yy<=2;yy++){
+        var py=my+yy;if(py<0||py>=mh)continue;
+        for(var xx=-2;xx<=2;xx++){
+          var px=mx+xx;if(px<0||px>=mw)continue;
+          var idx=py*mw+px;
+          if(md){
+            var cat=md[idx];
+            if(cat>=1&&cat<=5)best=Math.max(best,0.72);
+          }
+          /* confidenceMasks are indexed by semantic class. */
+          for(var k=1;k<=5;k++){
+            var arr=confidenceArrays[k];
+            if(arr&&idx<arr.length){
+              var v=arr[idx];
+              if(v>best)best=v;
+            }
+          }
         }
-        low[q]=score;
+      }
+      return best;
+    }
+
+    /* Build a low-resolution person mask first, then upscale with a soft
+       threshold. We only restore alpha where person evidence is strong. */
+    var pmw=mw,pmh=mh;
+    var low=new Float32Array(pmw*pmh);
+    for(var ly=0;ly<pmh;ly++){
+      for(var lx=0;lx<pmw;lx++){
+        var idx=ly*pmw+lx,score=0;
+        if(md){var c=md[idx];if(c>=1&&c<=5)score=0.80;}
+        for(var kk=1;kk<=5;kk++){
+          var ca=confidenceArrays[kk];
+          if(ca&&idx<ca.length)score=Math.max(score,ca[idx]);
+        }
+        low[idx]=score;
       }
     }
 
-    /* Find the existing ISNet foreground bounds. The repair area is deliberately
-       limited to a padded neighborhood around it, so white background elsewhere
-       cannot be restored simply because it resembles clothing. */
+    /* Bilinear sample of the person confidence mask. */
+    function sampleLow(fx,fy){
+      fx=Math.max(0,Math.min(pmw-1,fx));fy=Math.max(0,Math.min(pmh-1,fy));
+      var x0=Math.floor(fx),y0=Math.floor(fy),x1=Math.min(pmw-1,x0+1),y1=Math.min(pmh-1,y0+1);
+      var tx=fx-x0,ty=fy-y0;
+      var a=low[y0*pmw+x0],b=low[y0*pmw+x1],c=low[y1*pmw+x0],d=low[y1*pmw+x1];
+      return a*(1-tx)*(1-ty)+b*tx*(1-ty)+c*(1-tx)*ty+d*tx*ty;
+    }
+
+    /*
+      CRITICAL CLOTHING FIX v3:
+      Do NOT limit the repair area to the ISNet alpha bounding box.
+      If ISNet has already removed an entire shirt/scarf/torso section, that
+      section is absent from baseAlpha and therefore an ISNet-derived bounding
+      box can end above the missing clothing. The protection pass would then
+      never get a chance to restore it.
+
+      Instead, calculate the repair bounds from the MediaPipe person/clothing
+      mask itself. MediaPipe's selfie_multiclass model defines classes 1-5 as
+      person-related pixels (hair, body-skin, face-skin, clothes, accessories).
+      This lets a completely erased clothing region be restored.
+    */
     var minX=width,minY=height,maxX=-1,maxY=-1;
-    for(var yy=0;yy<height;yy++){
-      var row=yy*width;
-      for(var xx=0;xx<width;xx++){
-        if(baseAlpha[row+xx]>=100){
-          if(xx<minX)minX=xx;if(xx>maxX)maxX=xx;
-          if(yy<minY)minY=yy;if(yy>maxY)maxY=yy;
+    for(var ly2=0;ly2<pmh;ly2++){
+      for(var lx2=0;lx2<pmw;lx2++){
+        if(low[ly2*pmw+lx2]>=0.48){
+          var rx=Math.round((lx2+0.5)*width/pmw-0.5);
+          var ry=Math.round((ly2+0.5)*height/pmh-0.5);
+          if(rx<minX)minX=rx;if(rx>maxX)maxX=rx;
+          if(ry<minY)minY=ry;if(ry>maxY)maxY=ry;
         }
       }
     }
     if(maxX<0||maxY<0)return baseAlpha;
 
-    var padX=Math.max(32,Math.round(width*0.08));
-    var padY=Math.max(32,Math.round(height*0.10));
+    var padX=Math.max(12,Math.round(width*0.02));
+    var padY=Math.max(12,Math.round(height*0.02));
     minX=Math.max(0,minX-padX);maxX=Math.min(width-1,maxX+padX);
     minY=Math.max(0,minY-padY);maxY=Math.min(height-1,maxY+padY);
 
-    function sampleLow(fx,fy){
-      fx=Math.max(0,Math.min(mw-1,fx));fy=Math.max(0,Math.min(mh-1,fy));
-      var x=Math.round(fx),y=Math.round(fy);
-      return low[y*mw+x];
-    }
-
-    var out=new Uint8ClampedArray(baseAlpha.length);out.set(baseAlpha);
     for(var y=0;y<height;y++){
       if(y<minY||y>maxY)continue;
-      var fy=((y+0.5)*mh/height)-0.5;
+      var fy=((y+0.5)*pmh/height)-0.5;
       for(var x=0;x<width;x++){
         if(x<minX||x>maxX)continue;
-        var score=sampleLow(((x+0.5)*mw/width)-0.5,fy);
+        var score=sampleLow(((x+0.5)*pmw/width)-0.5,fy);
         var pos=y*width+x;
         var a=baseAlpha[pos];
-        /* Strong clothes evidence can repair a completely missing clothing pixel. */
-        if(score>=0.68){
+
+        /*
+          High-confidence person/clothing pixels are always kept opaque.
+          Medium-confidence pixels are repaired only when there is already
+          some foreground evidence, which protects edges without flooding
+          the surrounding background.
+        */
+        if(score>=0.48){
           a=255;
-        }else if(score>=0.48){
-          /* For medium confidence, only strengthen an existing/nearby foreground
-             pixel. This avoids turning broad white background regions opaque. */
-          if(a>0)a=Math.max(a,235);
+        }else if(score>=0.25 && a>0){
+          a=Math.max(a,245);
         }
         out[pos]=a;
       }
@@ -4534,7 +4577,7 @@ async function protectPersonClothingAlpha(sourceImage,baseAlpha,width,height){
     if(result&&typeof result.close==='function')result.close();
     return out;
   }catch(err){
-    console.warn('Targeted clothing protection unavailable; keeping ISNet result.',err);
+    console.warn('Person/clothing confidence protection unavailable; keeping ISNet result.',err);
     return baseAlpha;
   }
 }
@@ -5267,47 +5310,6 @@ if(applyBgMarksBtn){
 if(window.requestIdleCallback){requestIdleCallback(function(){getBackgroundRemovalEngine().catch(function(){});},{timeout:2500});}
 else{setTimeout(function(){getBackgroundRemovalEngine().catch(function(){});},1200);}
 
-/* CLOTHING-SAFE ALPHA HOLE REPAIR v7
-   Keep IMG.LY/ISNet as the sole segmentation authority.  The previous
-   person/clothing-mask experiments could re-introduce background pixels.
-   This repair only fills transparent regions that are completely enclosed by
-   already-foreground pixels.  Therefore exterior background remains removed,
-   while holes inside dark/light clothing, scarves and folded fabric are closed. */
-function fillEnclosedAlphaHoles(alpha,width,height){
-  var total=width*height;
-  if(!total)return alpha;
-  var outside=new Uint8Array(total);
-  var queue=new Int32Array(total);
-  var head=0,tail=0;
-  function pushIfBackground(p){
-    if(outside[p]||alpha[p]>=20)return;
-    outside[p]=1; queue[tail++]=p;
-  }
-  // Flood-fill transparent pixels connected to the canvas border.
-  for(var x=0;x<width;x++){
-    pushIfBackground(x);
-    if(height>1)pushIfBackground((height-1)*width+x);
-  }
-  for(var y=1;y<height-1;y++){
-    pushIfBackground(y*width);
-    if(width>1)pushIfBackground(y*width+width-1);
-  }
-  while(head<tail){
-    var p=queue[head++],x=p%width,y=(p-x)/width;
-    if(x>0)pushIfBackground(p-1);
-    if(x+1<width)pushIfBackground(p+1);
-    if(y>0)pushIfBackground(p-width);
-    if(y+1<height)pushIfBackground(p+width);
-  }
-  var out=new Uint8ClampedArray(alpha);
-  // Fill only genuinely enclosed transparent components. Keep a tiny safety
-  // rule so one-pixel anti-aliased edge gaps are not treated as large holes.
-  for(var i=0;i<total;i++){
-    if(alpha[i]<20 && !outside[i])out[i]=255;
-  }
-  return out;
-}
-
 /* AI-powered automatic background removal. */
 async function removeBackgroundLocal(){
   if(!originalImage){setBackgroundStatus('Upload an image first.');return;}
@@ -5352,7 +5354,7 @@ async function removeBackgroundLocal(){
       var alphaPixels=actx.getImageData(0,0,aw,ah);
       var baseAlpha=new Uint8ClampedArray(aw*ah);
       for(var ap=0,aii=0;ap<baseAlpha.length;ap++,aii+=4)baseAlpha[ap]=alphaPixels.data[aii+3];
-      var safeAlpha=fillEnclosedAlphaHoles(baseAlpha,aw,ah);
+      var safeAlpha=await protectPersonClothingAlpha(originalImage,baseAlpha,aw,ah);
       for(var rp=0,rii=0;rp<safeAlpha.length;rp++,rii+=4)alphaPixels.data[rii+3]=safeAlpha[rp];
       actx.putImageData(alphaPixels,0,0);
       protectedBlob=await new Promise(function(resolve,reject){
