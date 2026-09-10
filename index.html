@@ -5267,6 +5267,47 @@ if(applyBgMarksBtn){
 if(window.requestIdleCallback){requestIdleCallback(function(){getBackgroundRemovalEngine().catch(function(){});},{timeout:2500});}
 else{setTimeout(function(){getBackgroundRemovalEngine().catch(function(){});},1200);}
 
+/* CLOTHING-SAFE ALPHA HOLE REPAIR v7
+   Keep IMG.LY/ISNet as the sole segmentation authority.  The previous
+   person/clothing-mask experiments could re-introduce background pixels.
+   This repair only fills transparent regions that are completely enclosed by
+   already-foreground pixels.  Therefore exterior background remains removed,
+   while holes inside dark/light clothing, scarves and folded fabric are closed. */
+function fillEnclosedAlphaHoles(alpha,width,height){
+  var total=width*height;
+  if(!total)return alpha;
+  var outside=new Uint8Array(total);
+  var queue=new Int32Array(total);
+  var head=0,tail=0;
+  function pushIfBackground(p){
+    if(outside[p]||alpha[p]>=20)return;
+    outside[p]=1; queue[tail++]=p;
+  }
+  // Flood-fill transparent pixels connected to the canvas border.
+  for(var x=0;x<width;x++){
+    pushIfBackground(x);
+    if(height>1)pushIfBackground((height-1)*width+x);
+  }
+  for(var y=1;y<height-1;y++){
+    pushIfBackground(y*width);
+    if(width>1)pushIfBackground(y*width+width-1);
+  }
+  while(head<tail){
+    var p=queue[head++],x=p%width,y=(p-x)/width;
+    if(x>0)pushIfBackground(p-1);
+    if(x+1<width)pushIfBackground(p+1);
+    if(y>0)pushIfBackground(p-width);
+    if(y+1<height)pushIfBackground(p+width);
+  }
+  var out=new Uint8ClampedArray(alpha);
+  // Fill only genuinely enclosed transparent components. Keep a tiny safety
+  // rule so one-pixel anti-aliased edge gaps are not treated as large holes.
+  for(var i=0;i<total;i++){
+    if(alpha[i]<20 && !outside[i])out[i]=255;
+  }
+  return out;
+}
+
 /* AI-powered automatic background removal. */
 async function removeBackgroundLocal(){
   if(!originalImage){setBackgroundStatus('Upload an image first.');return;}
@@ -5311,7 +5352,7 @@ async function removeBackgroundLocal(){
       var alphaPixels=actx.getImageData(0,0,aw,ah);
       var baseAlpha=new Uint8ClampedArray(aw*ah);
       for(var ap=0,aii=0;ap<baseAlpha.length;ap++,aii+=4)baseAlpha[ap]=alphaPixels.data[aii+3];
-      var safeAlpha=await protectPersonClothingAlpha(originalImage,baseAlpha,aw,ah);
+      var safeAlpha=fillEnclosedAlphaHoles(baseAlpha,aw,ah);
       for(var rp=0,rii=0;rp<safeAlpha.length;rp++,rii+=4)alphaPixels.data[rii+3]=safeAlpha[rp];
       actx.putImageData(alphaPixels,0,0);
       protectedBlob=await new Promise(function(resolve,reject){
