@@ -4418,8 +4418,23 @@ function getBackgroundRemovalEngine(){
   return __bgRemovalModulePromise;
 }
 function getFastBackgroundRemovalConfig(){
+  /*
+   * PERSON/CLOTHING PROTECTION FIX
+   * --------------------------------
+   * The previous configuration selected the FP16/quantized models
+   * (medium/small). Those are faster, but on difficult portrait photos
+   * they can confuse clothing/scarves with the background.
+   *
+   * Use the full-precision IS-Net model for the foreground mask.
+   * This changes only the background-removal engine; the site's UI,
+   * layout and all other tools remain untouched.
+   */
   var hasGPU=!!(window.navigator&&navigator.gpu);
-  return {model:hasGPU?'medium':'small',device:hasGPU?'gpu':'cpu',proxyToWorker:!hasGPU};
+  return {
+    model:'large',
+    device:hasGPU?'gpu':'cpu',
+    proxyToWorker:false
+  };
 }
 
 async function batchRemoveBackgroundIndex(index){
@@ -5147,9 +5162,12 @@ async function removeBackgroundLocal(){
     var aiRemove=await getBackgroundRemovalEngine();
     var cfg=getFastBackgroundRemovalConfig();
     var blob=await aiRemove(originalImage.src,Object.assign(cfg,{
-      /* Use the higher-quality general foreground model. It is not human-only,
-         so animals, pets, products and other foreground subjects are preserved. */
-      model:'medium',
+      /* Use the full-precision IS-Net model for a more conservative,
+         higher-quality foreground mask. This is especially important for
+         people wearing clothing, scarves, coats and patterned fabric. */
+      model:'large',
+      device:(navigator.gpu?'gpu':'cpu'),
+      proxyToWorker:false,
       progress:function(key,current,total){
         var pct=total?Math.round(current/total*100):0;
         if(progressBar) progressBar.style.width=Math.max(0,Math.min(100,pct))+'%';
