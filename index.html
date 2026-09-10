@@ -4407,181 +4407,6 @@ function batchApplyImageToIndex(index,bg){
 }
 /* FAST BACKGROUND REMOVAL ENGINE */
 var __bgRemovalModulePromise=null;
-
-/* PERSON/CLOTHING PROTECTION v3
-   IMG.LY's ISNet model is general-purpose. On very light clothing/scarves that
-   are close to the background color, it can classify part of the clothing as
-   background. The MediaPipe SelfieMulticlass model explicitly has separate
-   classes for hair, skin, clothes and accessories, so we use its person mask
-   only as a protection mask and combine it with the existing AI result.
-   This is intentionally limited to the single-image Remove Background action;
-   the existing batch and mouse-removal functions are untouched. */
-var __personSegmenterPromise=null;
-async function getPersonClothingSegmenter(){
-  if(!__personSegmenterPromise){
-    __personSegmenterPromise=import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/vision_bundle.mjs')
-      .then(async function(mp){
-        var FilesetResolver=mp.FilesetResolver,ImageSegmenter=mp.ImageSegmenter;
-        if(!FilesetResolver||!ImageSegmenter)throw new Error('MediaPipe ImageSegmenter unavailable');
-        var vision=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm');
-        var segmenter=await ImageSegmenter.createFromOptions(vision,{
-          baseOptions:{
-            modelAssetPath:'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite'
-          },
-          runningMode:'IMAGE',
-          outputCategoryMask:true,
-          outputConfidenceMasks:true
-        });
-        return segmenter;
-      })
-      .catch(function(err){__personSegmenterPromise=null;throw err;});
-  }
-  return __personSegmenterPromise;
-}
-
-async function protectPersonClothingAlpha(sourceImage,baseAlpha,width,height){
-  try{
-    var segmenter=await getPersonClothingSegmenter();
-    var result=segmenter.segment(sourceImage);
-    var mask=result&&result.categoryMask;
-    var confs=result&&result.confidenceMasks;
-    if(!mask&&!confs)return baseAlpha;
-
-    var mw=(mask&&mask.width)||256,mh=(mask&&mask.height)||256;
-    var md=mask?mask.getAsUint8Array():null;
-    var out=new Uint8ClampedArray(baseAlpha.length);out.set(baseAlpha);
-
-    /*
-      IMPORTANT CLOTHING FIX:
-      The previous protection pass used only the 256px category mask and made
-      every detected clothes pixel fully opaque. That can still miss very light
-      / semi-transparent fabric because the low-resolution argmax may choose
-      background. This version also reads the model's per-class confidence.
-      A pixel is protected when the model has meaningful confidence that it is
-      hair/skin/clothes/accessory, and the protection is expanded only around
-      the existing ISNet foreground. This prevents white background from being
-      pulled back while restoring white scarves, shirts and sleeves.
-    */
-    var confidenceArrays=[];
-    if(Array.isArray(confs)){
-      for(var ci=0;ci<confs.length;ci++){
-        try{confidenceArrays[ci]=confs[ci].getAsFloat32Array();}catch(e){confidenceArrays[ci]=null;}
-      }
-    }
-
-    function personScore(mx,my){
-      var best=0;
-      /* Sample a small neighborhood to compensate for the 256px model. */
-      for(var yy=-2;yy<=2;yy++){
-        var py=my+yy;if(py<0||py>=mh)continue;
-        for(var xx=-2;xx<=2;xx++){
-          var px=mx+xx;if(px<0||px>=mw)continue;
-          var idx=py*mw+px;
-          if(md){
-            var cat=md[idx];
-            if(cat>=1&&cat<=5)best=Math.max(best,0.72);
-          }
-          /* confidenceMasks are indexed by semantic class. */
-          for(var k=1;k<=5;k++){
-            var arr=confidenceArrays[k];
-            if(arr&&idx<arr.length){
-              var v=arr[idx];
-              if(v>best)best=v;
-            }
-          }
-        }
-      }
-      return best;
-    }
-
-    /* Build a low-resolution person mask first, then upscale with a soft
-       threshold. We only restore alpha where person evidence is strong. */
-    var pmw=mw,pmh=mh;
-    var low=new Float32Array(pmw*pmh);
-    for(var ly=0;ly<pmh;ly++){
-      for(var lx=0;lx<pmw;lx++){
-        var idx=ly*pmw+lx,score=0;
-        if(md){var c=md[idx];if(c>=1&&c<=5)score=0.80;}
-        for(var kk=1;kk<=5;kk++){
-          var ca=confidenceArrays[kk];
-          if(ca&&idx<ca.length)score=Math.max(score,ca[idx]);
-        }
-        low[idx]=score;
-      }
-    }
-
-    /* Bilinear sample of the person confidence mask. */
-    function sampleLow(fx,fy){
-      fx=Math.max(0,Math.min(pmw-1,fx));fy=Math.max(0,Math.min(pmh-1,fy));
-      var x0=Math.floor(fx),y0=Math.floor(fy),x1=Math.min(pmw-1,x0+1),y1=Math.min(pmh-1,y0+1);
-      var tx=fx-x0,ty=fy-y0;
-      var a=low[y0*pmw+x0],b=low[y0*pmw+x1],c=low[y1*pmw+x0],d=low[y1*pmw+x1];
-      return a*(1-tx)*(1-ty)+b*tx*(1-ty)+c*(1-tx)*ty+d*tx*ty;
-    }
-
-    /*
-      CRITICAL CLOTHING FIX v3:
-      Do NOT limit the repair area to the ISNet alpha bounding box.
-      If ISNet has already removed an entire shirt/scarf/torso section, that
-      section is absent from baseAlpha and therefore an ISNet-derived bounding
-      box can end above the missing clothing. The protection pass would then
-      never get a chance to restore it.
-
-      Instead, calculate the repair bounds from the MediaPipe person/clothing
-      mask itself. MediaPipe's selfie_multiclass model defines classes 1-5 as
-      person-related pixels (hair, body-skin, face-skin, clothes, accessories).
-      This lets a completely erased clothing region be restored.
-    */
-    var minX=width,minY=height,maxX=-1,maxY=-1;
-    for(var ly2=0;ly2<pmh;ly2++){
-      for(var lx2=0;lx2<pmw;lx2++){
-        if(low[ly2*pmw+lx2]>=0.48){
-          var rx=Math.round((lx2+0.5)*width/pmw-0.5);
-          var ry=Math.round((ly2+0.5)*height/pmh-0.5);
-          if(rx<minX)minX=rx;if(rx>maxX)maxX=rx;
-          if(ry<minY)minY=ry;if(ry>maxY)maxY=ry;
-        }
-      }
-    }
-    if(maxX<0||maxY<0)return baseAlpha;
-
-    var padX=Math.max(12,Math.round(width*0.02));
-    var padY=Math.max(12,Math.round(height*0.02));
-    minX=Math.max(0,minX-padX);maxX=Math.min(width-1,maxX+padX);
-    minY=Math.max(0,minY-padY);maxY=Math.min(height-1,maxY+padY);
-
-    for(var y=0;y<height;y++){
-      if(y<minY||y>maxY)continue;
-      var fy=((y+0.5)*pmh/height)-0.5;
-      for(var x=0;x<width;x++){
-        if(x<minX||x>maxX)continue;
-        var score=sampleLow(((x+0.5)*pmw/width)-0.5,fy);
-        var pos=y*width+x;
-        var a=baseAlpha[pos];
-
-        /*
-          High-confidence person/clothing pixels are always kept opaque.
-          Medium-confidence pixels are repaired only when there is already
-          some foreground evidence, which protects edges without flooding
-          the surrounding background.
-        */
-        if(score>=0.48){
-          a=255;
-        }else if(score>=0.25 && a>0){
-          a=Math.max(a,245);
-        }
-        out[pos]=a;
-      }
-    }
-
-    if(result&&typeof result.close==='function')result.close();
-    return out;
-  }catch(err){
-    console.warn('Person/clothing confidence protection unavailable; keeping ISNet result.',err);
-    return baseAlpha;
-  }
-}
-
 function getBackgroundRemovalEngine(){
   if(!__bgRemovalModulePromise){
     __bgRemovalModulePromise=import('https://esm.sh/@imgly/background-removal@1.7.0').then(function(mod){
@@ -5322,8 +5147,9 @@ async function removeBackgroundLocal(){
     var aiRemove=await getBackgroundRemovalEngine();
     var cfg=getFastBackgroundRemovalConfig();
     var blob=await aiRemove(originalImage.src,Object.assign(cfg,{
-      /* Use the highest-accuracy general foreground model. */
-      model:'large',
+      /* Use the higher-quality general foreground model. It is not human-only,
+         so animals, pets, products and other foreground subjects are preserved. */
+      model:'medium',
       progress:function(key,current,total){
         var pct=total?Math.round(current/total*100):0;
         if(progressBar) progressBar.style.width=Math.max(0,Math.min(100,pct))+'%';
@@ -5332,39 +5158,10 @@ async function removeBackgroundLocal(){
       }
     }));
 
-    /* IMPORTANT: keep the AI PNG alpha channel intact. Before decoding the
-       final PNG, combine its alpha with a person/clothing protection mask.
-       This specifically prevents light/white clothes and scarves from being
-       mistaken for the white background. Non-person images automatically keep
-       the original ISNet alpha. */
-    var protectedBlob=blob;
-    try{
-      var alphaImg=await new Promise(function(resolve,reject){
-        var ai=new Image();
-        ai.onload=function(){resolve(ai);};
-        ai.onerror=function(){reject(new Error('AI alpha preview could not be decoded'));};
-        ai.src=URL.createObjectURL(blob);
-      });
-      var aw=alphaImg.naturalWidth||alphaImg.width,ah=alphaImg.naturalHeight||alphaImg.height;
-      var ac=document.createElement('canvas');ac.width=aw;ac.height=ah;
-      var actx=ac.getContext('2d',{willReadFrequently:true});
-      actx.drawImage(originalImage,0,0,aw,ah);
-      var originalPixels=actx.getImageData(0,0,aw,ah);
-      actx.clearRect(0,0,aw,ah);actx.drawImage(alphaImg,0,0,aw,ah);
-      var alphaPixels=actx.getImageData(0,0,aw,ah);
-      var baseAlpha=new Uint8ClampedArray(aw*ah);
-      for(var ap=0,aii=0;ap<baseAlpha.length;ap++,aii+=4)baseAlpha[ap]=alphaPixels.data[aii+3];
-      var safeAlpha=await protectPersonClothingAlpha(originalImage,baseAlpha,aw,ah);
-      for(var rp=0,rii=0;rp<safeAlpha.length;rp++,rii+=4)alphaPixels.data[rii+3]=safeAlpha[rp];
-      actx.putImageData(alphaPixels,0,0);
-      protectedBlob=await new Promise(function(resolve,reject){
-        ac.toBlob(function(b){b?resolve(b):reject(new Error('Protected PNG encoding failed'));},'image/png');
-      });
-      try{URL.revokeObjectURL(alphaImg.src);}catch(e){}
-    }catch(maskErr){
-      console.warn('Clothing protection pass skipped; using original AI cutout.',maskErr);
-    }
-    var cutoutUrl=URL.createObjectURL(protectedBlob);
+    /* IMPORTANT: keep the AI PNG alpha channel intact.
+       The video result is a clean transparent cutout/checkerboard preview,
+       so DO NOT paint white behind it and DO NOT flatten semi-transparent edges. */
+    var cutoutUrl=URL.createObjectURL(blob);
     var ni=new Image();
     ni.onload=function(){
       try{
