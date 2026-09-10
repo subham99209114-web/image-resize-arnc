@@ -4418,23 +4418,8 @@ function getBackgroundRemovalEngine(){
   return __bgRemovalModulePromise;
 }
 function getFastBackgroundRemovalConfig(){
-  /*
-   * PERSON/CLOTHING PROTECTION FIX
-   * --------------------------------
-   * The previous configuration selected the FP16/quantized models
-   * (medium/small). Those are faster, but on difficult portrait photos
-   * they can confuse clothing/scarves with the background.
-   *
-   * Use the full-precision IS-Net model for the foreground mask.
-   * This changes only the background-removal engine; the site's UI,
-   * layout and all other tools remain untouched.
-   */
   var hasGPU=!!(window.navigator&&navigator.gpu);
-  return {
-    model:'large',
-    device:hasGPU?'gpu':'cpu',
-    proxyToWorker:false
-  };
+  return {model:hasGPU?'medium':'small',device:hasGPU?'gpu':'cpu',proxyToWorker:!hasGPU};
 }
 
 async function batchRemoveBackgroundIndex(index){
@@ -5162,12 +5147,13 @@ async function removeBackgroundLocal(){
     var aiRemove=await getBackgroundRemovalEngine();
     var cfg=getFastBackgroundRemovalConfig();
     var blob=await aiRemove(originalImage.src,Object.assign(cfg,{
-      /* Use the full-precision IS-Net model for a more conservative,
-         higher-quality foreground mask. This is especially important for
-         people wearing clothing, scarves, coats and patterned fabric. */
+      /* Use the highest-accuracy ISNet model for the single-image cutout.
+         * The medium/FP16 model can make light or textured clothing semi-transparent
+         * on some portrait photos. Large -> ISNet gives a stronger foreground mask
+         * and keeps the person's clothes/arms/edges intact.
+         * IMPORTANT: this changes only the AI model used for this button; the
+         * existing UI, controls, output format and all other functions remain unchanged. */
       model:'large',
-      device:(navigator.gpu?'gpu':'cpu'),
-      proxyToWorker:false,
       progress:function(key,current,total){
         var pct=total?Math.round(current/total*100):0;
         if(progressBar) progressBar.style.width=Math.max(0,Math.min(100,pct))+'%';
