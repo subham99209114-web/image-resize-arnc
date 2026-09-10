@@ -1330,7 +1330,7 @@ No image upload is required for local image processing.
   <b>Any Image Format / Extension</b>
 </label>
 
-<input accept='image/*,.jpg,.jpeg,.png,.webp,.heic,.heif,.tif,.tiff' id='fileInput' type='file' capture='environment'/>
+<input accept='*/*' id='fileInput' type='file'/>
 
 <label class='upload multiUpload' for='multiFileInput' id='multiUploadLabel' role='button' tabindex='0'>
   📚 <b>Select Multiple Images</b>
@@ -1366,7 +1366,7 @@ No image upload is required for local image processing.
 
   <h2 id='signInRequirementText' style='text-align: center; color: pink;'>&#9432;To use the &#8220;Additional/Professional,Optional &#8595;&#8221; options, you need to 👤 Sign In.</h2>  
 
-<input accept='image/*,.jpg,.jpeg,.png,.webp,.heic,.heif,.tif,.tiff' id='multiFileInput' multiple='multiple' type='file'/>
+<input accept='*/*' id='multiFileInput' multiple='multiple' type='file'/>
 <div id='postUploadTools' style='display:none;'>
 <div class='additionalToolsToggle' id='showAdditionalToggle' style='display:none;'>
   <label class='additionalToolsLabel'>
@@ -2526,189 +2526,135 @@ function decodeTIFFUniversal(file, done){
 }
 
 function decodeHEICUniversal(file, done){
-  loadExternalScriptOnce(
+  /* Robust HEIC/HEIF decoder:
+     1) Try the phone/browser's native decoder first.
+     2) If native decoding is unavailable, load heic2any.
+     3) Try both jsDelivr and unpkg so a blocked CDN does not break upload.
+     This is upload-only logic; no UI/design/control is changed. */
+  var finished=false;
+  function finish(err,data){
+    if(finished)return;
+    finished=true;
+    done(err,data);
+  }
+
+  function nativeDecode(){
+    try{
+      if(typeof createImageBitmap!=='function'){
+        loadDecoderFallback();
+        return;
+      }
+      createImageBitmap(file).then(function(bitmap){
+        try{
+          var w=bitmap.width,h=bitmap.height;
+          if(!w||!h){
+            if(bitmap.close)bitmap.close();
+            loadDecoderFallback();
+            return;
+          }
+          var c=document.createElement('canvas');
+          c.width=w;c.height=h;
+          var x=c.getContext('2d');
+          x.drawImage(bitmap,0,0);
+          if(bitmap.close)bitmap.close();
+          finish(null,c.toDataURL('image/png'));
+        }catch(e){
+          if(bitmap&&bitmap.close){try{bitmap.close();}catch(_e){}}
+          loadDecoderFallback();
+        }
+      }).catch(function(){ loadDecoderFallback(); });
+    }catch(e){ loadDecoderFallback(); }
+  }
+
+  var decoderUrls=[
     'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js',
-    'heic2any',
-    function(err){
-      if(err || !window.heic2any){ done(new Error('HEIC/HEIF decoder could not be loaded.')); return; }
-      window.heic2any({blob:file,toType:'image/png',quality:1})
+    'https://unpkg.com/heic2any@0.0.4/dist/heic2any.min.js'
+  ];
+  var decoderIndex=0;
+
+  function loadDecoderFallback(){
+    if(window.heic2any){runHeic2Any();return;}
+    if(decoderIndex>=decoderUrls.length){
+      finish(new Error('HEIC/HEIF decoder could not be loaded.'));
+      return;
+    }
+    var src=decoderUrls[decoderIndex++];
+    loadExternalScriptOnce(src,'heic2any',function(err){
+      if(!err&&window.heic2any){runHeic2Any();}
+      else loadDecoderFallback();
+    });
+  }
+
+  function runHeic2Any(){
+    try{
+      /* Some Android file pickers provide an empty MIME type. Give the
+         decoder an explicit HEIF MIME without changing the original file. */
+      var ext=universalExtension(file);
+      var source=file;
+      if((!file.type||file.type==='application/octet-stream') && (ext==='heic'||ext==='heif')){
+        source=new Blob([file],{type:ext==='heif'?'image/heif':'image/heic'});
+      }
+      window.heic2any({blob:source,toType:'image/png',quality:1})
         .then(function(result){
           var blob=Array.isArray(result)?result[0]:result;
+          if(!blob)throw new Error('Empty HEIC/HEIF conversion result.');
           var r=new FileReader();
-          r.onload=function(){ done(null,r.result); };
-          r.onerror=function(){ done(new Error('Unable to read converted HEIC/HEIF image.')); };
+          r.onload=function(){finish(null,r.result);};
+          r.onerror=function(){finish(new Error('Unable to read converted HEIC/HEIF image.'));};
           r.readAsDataURL(blob);
         })
-        .catch(function(e){ done(e); });
-    }
-  );
-}
+        .catch(function(){
+          finish(new Error('HEIC/HEIF image could not be decoded.'));
+        });
+    }catch(e){finish(e);}
+  }
 
+  nativeDecode();
+}
 function readImageUniversal(file, done){
   if(!file){ done(new Error('No file selected.')); return; }
 
   var ext=universalExtension(file);
   var mime=String(file.type||'').toLowerCase();
 
-  /*
-   * UNIVERSAL DECODER — compatibility fix
-   * JPG/JPEG, PNG and WEBP use the browser decoder first.
-   * HEIC/HEIF and TIFF keep their existing local CDN decoder.
-   * If the normal <img> path fails, FileReader + createImageBitmap()
-   * are tried before reporting an unsupported image.
-   */
+  /* Special formats first because some browsers report an empty/unknown MIME. */
   if(ext==='heic' || ext==='heif' || mime==='image/heic' || mime==='image/heif'){
     decodeHEICUniversal(file,done);
     return;
   }
-
   if(ext==='tif' || ext==='tiff' || mime==='image/tiff'){
     decodeTIFFUniversal(file,done);
     return;
   }
 
-  var objectUrl=null;
-  try{
-    objectUrl=URL.createObjectURL(file);
-  }catch(e){
-    objectUrl=null;
-  }
-
+  /* Native browser decoder: works from actual bytes, not just the extension. */
+  var objectUrl=URL.createObjectURL(file);
+  var img=new Image();
   var finished=false;
-
-  function finish(err,data,img){
+  function finish(err,data){
     if(finished)return;
     finished=true;
-
-    if(!err && objectUrl){
-      /*
-       * Keep the Blob URL alive because Before/After and preview may
-       * still reference it. It is revoked when another image is loaded.
-       */
-      universalActiveObjectUrl=objectUrl;
-    }
-
+    /* Do NOT revoke objectUrl here. The Before → After Dashboard and the
+       main preview may still be using this exact URL. It is revoked when
+       the next image is uploaded. */
+    if(!err) universalActiveObjectUrl = objectUrl;
     done(err,data,img);
   }
-
-  function tryCreateImageBitmapFallback(){
-    if(typeof createImageBitmap!=='function'){
-      finish(new Error('Unsupported or invalid image format.'));
-      return;
-    }
-
-    try{
-      var bitmapOptions={};
-      /*
-       * Preserve camera-photo orientation when the browser supports it.
-       * Some browsers ignore this option, which is also safe.
-       */
-      bitmapOptions.imageOrientation='from-image';
-
-      createImageBitmap(file,bitmapOptions).then(function(bitmap){
-        try{
-          var w=bitmap.width,h=bitmap.height;
-          if(!w || !h) throw new Error('Invalid image dimensions.');
-
-          var c=document.createElement('canvas');
-          c.width=w;
-          c.height=h;
-
-          var ctx=c.getContext('2d',{alpha:true});
-          if(!ctx) throw new Error('Canvas is unavailable.');
-
-          ctx.drawImage(bitmap,0,0,w,h);
-          if(typeof bitmap.close==='function') bitmap.close();
-
-          /*
-           * PNG is only the internal fallback representation.
-           * The original file remains available as originalFile.
-           */
-          var data=c.toDataURL('image/png');
-          var fallbackImg=new Image();
-
-          fallbackImg.onload=function(){
-            finish(null,data,fallbackImg);
-          };
-          fallbackImg.onerror=function(){
-            finish(new Error('Image decoder could not display this image.'));
-          };
-          fallbackImg.src=data;
-        }catch(e){
-          try{ if(typeof bitmap.close==='function') bitmap.close(); }catch(ignore){}
-          finish(e);
-        }
-      }).catch(function(){
-        finish(new Error('Unsupported or invalid image format.'));
-      });
-    }catch(e){
-      finish(e);
-    }
-  }
-
-  function tryFileReaderFallback(){
+  img.onload=function(){ finish(null,objectUrl); };
+  img.onerror=function(){
     try{
       var r=new FileReader();
-
       r.onload=function(ev){
-        var data=ev.target.result;
         var fallback=new Image();
-
-        fallback.onload=function(){
-          finish(null,data,fallback);
-        };
-
-        fallback.onerror=function(){
-          /*
-           * Important for Android/Chrome images whose MIME is empty or
-           * whose normal object URL decoder refuses the file.
-           */
-          tryCreateImageBitmapFallback();
-        };
-
-        fallback.src=data;
+        fallback.onload=function(){ finish(null,ev.target.result); };
+        fallback.onerror=function(){ finish(new Error('Unsupported or invalid image format.')); };
+        fallback.src=ev.target.result;
       };
-
-      r.onerror=function(){
-        tryCreateImageBitmapFallback();
-      };
-
+      r.onerror=function(){ finish(new Error('Unable to read this file.')); };
       r.readAsDataURL(file);
-    }catch(e){
-      tryCreateImageBitmapFallback();
-    }
-  }
-
-  if(!objectUrl){
-    tryFileReaderFallback();
-    return;
-  }
-
-  var img=new Image();
-
-  /*
-   * decode() is used where available, but onload remains the final
-   * compatibility path because older Android browsers may not expose it.
-   */
-  img.onload=function(){
-    finish(null,objectUrl,img);
+    }catch(e){ finish(e); }
   };
-
-  img.onerror=function(){
-    tryFileReaderFallback();
-  };
-
   img.src=objectUrl;
-
-  /*
-   * Some browsers can reject an image during decode() without firing
-   * the expected event promptly. This only adds a guarded fallback.
-   */
-  if(typeof img.decode==='function'){
-    img.decode().catch(function(){
-      if(!finished) tryFileReaderFallback();
-    });
-  }
 }
 
 function createImageFromData(data, done){
@@ -2835,7 +2781,11 @@ loadSingleImage(file);
 }
 );
 
-/* Single-image upload uses the change listener above; no duplicate onchange handler. */
+/* Keep upload working even if another Blogger script replaces the change handler. */
+fileInput.onchange=function(){
+  var file=this.files&&this.files[0];
+  if(file) loadSingleImage(file);
+};
 
 multiFileInput.addEventListener(
 'change',
