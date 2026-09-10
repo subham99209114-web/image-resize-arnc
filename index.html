@@ -4419,19 +4419,65 @@ function getBackgroundRemovalEngine(){
 }
 function getFastBackgroundRemovalConfig(){
   var hasGPU=!!(window.navigator&&navigator.gpu);
-  /*
-   * Professional local cutout defaults:
-   * - medium model when GPU is available
-   * - small model on CPU to avoid freezing weaker devices
-   * - worker on CPU
-   * The existing button/UI is intentionally unchanged.
-   */
-  return {
-    model:hasGPU?'medium':'small',
-    device:hasGPU?'gpu':'cpu',
-    proxyToWorker:!hasGPU,
-    output:{format:'image/png'}
-  };
+  /* Professional-quality foreground model: IS-Net FP32 is used for both
+     GPU and CPU so thin details such as a baby's fingers/hand are less likely
+     to be trimmed by the quantized/smaller model. The UI and all existing
+     background tools remain unchanged. */
+  return {model:'large',device:hasGPU?'gpu':'cpu',proxyToWorker:!hasGPU};
+}
+
+/* Edge-safe foreground recovery: restore only very small transparent gaps
+   immediately next to an already detected foreground edge. This is designed
+   for thin fingers, ears, hair and baby hands that can be partially eroded by
+   segmentation when they touch a similarly colored blanket/background. */
+async function refineForegroundEdges(blob){
+  try{
+    var bmp=await createImageBitmap(blob);
+    var w=bmp.width,h=bmp.height;
+    var c=document.createElement('canvas');c.width=w;c.height=h;
+    var x=c.getContext('2d',{willReadFrequently:true});
+    x.drawImage(bmp,0,0);
+    if(bmp.close)bmp.close();
+    var out=x.getImageData(0,0,w,h),od=out.data;
+    var originalCanvas=document.createElement('canvas');originalCanvas.width=w;originalCanvas.height=h;
+    var ox=originalCanvas.getContext('2d',{willReadFrequently:true});
+    ox.drawImage(originalImage,0,0,w,h);
+    var src=ox.getImageData(0,0,w,h).data;
+    var radius=Math.max(2,Math.min(4,Math.round(Math.max(w,h)/700)));
+    var alpha=new Uint8ClampedArray(w*h);
+    for(var p=0;p<w*h;p++) alpha[p]=od[p*4+3];
+    function skinLike(i){
+      var r=src[i],g=src[i+1],b=src[i+2];
+      var mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+      if(mx<35 || mx-mn<8)return false;
+      return r>=g*1.03 && g>=b*1.01 && (r-g)>=4 && (r-b)>=8;
+    }
+    for(var yy=0;yy<h;yy++){
+      for(var xx=0;xx<w;xx++){
+        var p=yy*w+xx,di=p*4;
+        if(alpha[p]>24)continue;
+        var found=false;
+        for(var dy=-radius;dy<=radius&&!found;dy++){
+          var ny=yy+dy;if(ny<0||ny>=h)continue;
+          for(var dx=-radius;dx<=radius;dx++){
+            if(dx*dx+dy*dy>radius*radius)continue;
+            var nx=xx+dx;if(nx<0||nx>=w)continue;
+            if(alpha[ny*w+nx]>=150){found=true;break;}
+          }
+        }
+        if(found && skinLike(di)){
+          od[di+3]=Math.max(od[di+3],190);
+        }
+      }
+    }
+    x.putImageData(out,0,0);
+    return await new Promise(function(resolve,reject){
+      c.toBlob(function(b){b?resolve(b):reject(new Error('Foreground refinement failed'));},'image/png');
+    });
+  }catch(err){
+    console.warn('Foreground edge refinement skipped:',err);
+    return blob;
+  }
 }
 
 async function batchRemoveBackgroundIndex(index){
@@ -4466,6 +4512,12 @@ async function batchRemoveBackgroundIndex(index){
           setBatchBgStatus('🤖 AI background removal: image '+(index+1)+' / '+batchImages.length+' — '+pct+'%');
         }
       }));
+      /* Apply the same tiny edge-recovery pass to batch results so hands,
+         fingers and other thin foreground details are not unnecessarily lost. */
+      var savedOriginalImage=originalImage;
+      originalImage=item.image;
+      blob=await refineForegroundEdges(blob);
+      originalImage=savedOriginalImage;
 
       if(!blob)throw new Error('AI returned an empty result');
 
@@ -4972,31 +5024,10 @@ function bgPointerPosition(e){
 function paintBgMark(e){
   if(!bgPainting || !bgMarks)return;
   var p=bgPointerPosition(e),ctx=bgMarks.getContext('2d');
-
-  /*
-   * The mark canvas is a real removal mask, not a color sample.
-   * Use full opacity so Apply can remove exactly what the user painted.
-   */
-  var brush=Math.max(2,Number(bgBrushSize.value)||30)*
-    bgMarkCanvas.width/Math.max(1,bgMarkCanvas.clientWidth);
-
-  ctx.save();
-  ctx.globalAlpha=1;
-  ctx.fillStyle='#ffffff';
-  ctx.beginPath();
-  ctx.arc(p.x,p.y,brush/2,0,Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-
-  bgMarkCtx.clearRect(0,0,bgMarkCanvas.width,bgMarkCanvas.height);
+  var brush=Math.max(2,Number(bgBrushSize.value)||30)*bgMarkCanvas.width/Math.max(1,bgMarkCanvas.clientWidth);
+  ctx.fillStyle=(bgBrushColor&&bgBrushColor.value)||'#ff3030';ctx.globalAlpha=.72;ctx.beginPath();ctx.arc(p.x,p.y,brush/2,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
   bgMarkCtx.drawImage(originalImage,0,0,bgMarkCanvas.width,bgMarkCanvas.height);
-
-  /* Show the mask in the selected brush color while editing. */
-  bgMarkCtx.save();
-  bgMarkCtx.globalAlpha=.72;
-  bgMarkCtx.globalCompositeOperation='source-over';
   bgMarkCtx.drawImage(bgMarks,0,0);
-  bgMarkCtx.restore();
 }
 
 if(bgBrushSize){
@@ -5067,156 +5098,99 @@ if(bgMarkCanvas){
 }
 if(applyBgMarksBtn){
   applyBgMarksBtn.onclick=function(){
-    if(!originalImage || !bgMarks){
-      setBackgroundStatus('Mark the background first.');
-      return;
-    }
-
+    if(!originalImage || !bgMarks){setBackgroundStatus('Mark the background first.');return;}
     try{
       var w=originalImage.naturalWidth,h=originalImage.naturalHeight;
-
-      /*
-       * IMPORTANT PROFESSIONAL MOUSE-REMOVE BEHAVIOUR
-       * ---------------------------------------------
-       * The old code used a color flood-fill after every painted seed.
-       * That made a small mouse stroke remove a whole connected color area.
-       *
-       * This version uses the user's painted brush mask as the removal mask.
-       * Therefore:
-       *   - only the exact area painted by the mouse is removed;
-       *   - unpainted background is NOT removed;
-       *   - the foreground outside the brush remains untouched;
-       *   - the brush size remains exactly the selected brush size;
-       *   - the edge is feathered slightly for a cleaner professional result.
-       */
-      var marks=document.createElement('canvas');
-      marks.width=w;
-      marks.height=h;
+      var marks=document.createElement('canvas');marks.width=w;marks.height=h;
       var mc=marks.getContext('2d',{willReadFrequently:true});
-      mc.clearRect(0,0,w,h);
       mc.drawImage(bgMarks,0,0,w,h);
-
       var md=mc.getImageData(0,0,w,h).data;
-
-      var c=document.createElement('canvas');
-      c.width=w;
-      c.height=h;
-      var ctx=c.getContext('2d',{willReadFrequently:true});
-      ctx.drawImage(originalImage,0,0,w,h);
-
-      var im=ctx.getImageData(0,0,w,h);
-      var d=im.data;
-
-      /*
-       * Convert the visible brush mask into alpha removal.
-       * Painted pixels are made transparent; the original RGB is preserved.
-       * A soft alpha transition is retained where the brush itself is soft.
-       */
-      var changed=0;
-      for(var p=0;p<w*h;p++){
-        var mi=p*4;
-        var maskAlpha=md[mi+3];
-        if(maskAlpha>0){
-          var oldAlpha=d[mi+3];
-          var removeAmount=maskAlpha/255;
-          d[mi+3]=Math.round(oldAlpha*(1-removeAmount));
-          changed++;
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      var ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(originalImage,0,0,w,h);
+      var im=ctx.getImageData(0,0,w,h),d=im.data;
+      var tolerance=Math.max(0,Number(bgTolerance&&bgTolerance.value)||48);
+      var marked=new Uint8Array(w*h);
+      var seeds=[];
+      /* Convert every painted point to the real image coordinates. */
+      for(var my=0;my<marks.height;my++){
+        for(var mx=0;mx<marks.width;mx++){
+          var mi=(my*marks.width+mx)*4;
+          if(md[mi+3]>15){
+            var sx=Math.min(w-1,Math.max(0,Math.floor(mx*w/marks.width)));
+            var sy=Math.min(h-1,Math.max(0,Math.floor(my*h/marks.height)));
+            var sp=sy*w+sx;
+            if(!marked[sp]){marked[sp]=1;seeds.push(sp);}
+          }
         }
       }
+      if(!seeds.length){setBackgroundStatus('Mark the background first.');return;}
 
-      if(!changed){
-        setBackgroundStatus('Mark the background first.');
-        return;
+      /* Multi-area flood fill. Each mouse-selected area uses the color of
+         its own seed, so different background colors can be selected safely. */
+      var visited=new Uint8Array(w*h),stack=[];
+      function trySeed(seed){
+        if(visited[seed])return;
+        var si=seed*4, sr=d[si],sg=d[si+1],sb=d[si+2];
+        stack.push(seed);visited[seed]=1;
+        while(stack.length){
+          var pp=stack.pop(),x=pp%w,y=Math.floor(pp/w),ii=pp*4;
+          /* Every selected/background pixel becomes exactly #FFFFFF. */
+          d[ii]=255;d[ii+1]=255;d[ii+2]=255;d[ii+3]=255;
+          var nb=[pp-1,pp+1,pp-w,pp+w];
+          for(var n=0;n<4;n++){
+            var qp=nb[n];
+            if(qp<0||qp>=w*h||visited[qp])continue;
+            var qx=qp%w;
+            if((n===0&&qx===w-1)||(n===1&&qx===0))continue;
+            var qi=qp*4;
+            if(colorDistance(d[qi],d[qi+1],d[qi+2],sr,sg,sb)<=tolerance){
+              visited[qp]=1;stack.push(qp);
+            }
+          }
+        }
       }
+      for(var si=0;si<seeds.length;si++)trySeed(seeds[si]);
 
+      /* Guarantee the exact white value for every pixel explicitly painted. */
+      for(var z=0;z<marked.length;z++)if(marked[z]){
+        var zi=z*4;d[zi]=255;d[zi+1]=255;d[zi+2]=255;d[zi+3]=255;
+      }
       ctx.putImageData(im,0,0);
-
       var niImg=new Image();
       niImg.onload=function(){
-        /*
-         * Keep the transparent result as the foreground. Do NOT call
-         * renderReplacementBackground() here because that would flatten the
-         * transparency and would make the mouse-painted area look like white.
-         */
-        originalImage=niImg;
-        foregroundImage=niImg;
-        imageWidth=w;
-        imageHeight=h;
-        widthInput.value=w;
-        heightInput.value=h;
-        widthUnit.value=heightUnit.value='px';
-        keepRatio.checked=true;
-        megapixelInput.value=(w*h/1000000).toFixed(2);
-        formatSelect.value='image/png';
-
-        backgroundMode='removed';
-        backgroundImage=null;
-        backgroundColor.value='#ffffff';
-        if(bgColorPicker)bgColorPicker.value='#ffffff';
-
-        previewImage.classList.add('transparentPreview');
-        previewImage.src=niImg.src;
-        cropImage.src=niImg.src;
-
-        bgMousePanel.style.display='none';
-        bgMarks=null;
-        if(bgMarkCtx && bgMarkCanvas){
-          bgMarkCtx.clearRect(0,0,bgMarkCanvas.width,bgMarkCanvas.height);
-        }
-
-        setBackgroundStatus('✅ Only the area painted with the mouse was removed. Transparent PNG ready.');
-        info.innerHTML='Mouse background removal applied<br/>'+w+' × '+h+' px<br/><b>Only the painted area was removed</b>';
-
-        if(batchBgMouseMode && batchImages.length &&
-           batchBgMouseTargetIndex>=0 &&
-           batchBgMouseTargetIndex<batchImages.length){
-
-          /*
-           * Update only the selected batch item. This preserves the existing
-           * batch workflow and avoids changing any other selected image.
-           */
+        originalImage=niImg;foregroundImage=niImg;imageWidth=w;imageHeight=h;
+        widthInput.value=w;heightInput.value=h;formatSelect.value='image/png';
+        backgroundMode='color';backgroundColor.value='#ffffff';bgColorPicker.value='#ffffff';
+        bgMousePanel.style.display='none';bgMarks=null;
+        renderReplacementBackground('color','#ffffff',null);
+        setBackgroundStatus('✅ Selected background areas removed. White background is active; you can now choose another JPG background color.');
+        info.innerHTML='Mouse background removal applied<br/>'+w+' × '+h+' px<br/>Removed background: pure white (#FFFFFF).';
+        if(batchBgMouseMode && batchImages.length && batchBgMouseTargetIndex>=0 && batchBgMouseTargetIndex<batchImages.length){
+          /* BATCH MOUSE FIX: update the exact batch item directly. Do not route
+             the result through the single-image background renderer, because
+             that can replace originalImage before the batch item is updated. */
           var mouseTarget=batchBgMouseTargetIndex;
           var mouseItem=batchImages[mouseTarget];
-
           if(mouseItem){
-            if(!mouseItem.originalImage){
-              mouseItem.originalImage=mouseItem.image;
-            }
-            mouseItem.foregroundImage=niImg;
             mouseItem.image=niImg;
             mouseItem.backgroundApplied=true;
             mouseItem.backgroundMode='mouse';
-            mouseItem.backgroundOriginalSrc=
-              mouseItem.backgroundOriginalSrc ||
-              (mouseItem.originalImage && mouseItem.originalImage.src);
-
+            mouseItem.backgroundOriginalSrc=mouseItem.backgroundOriginalSrc||mouseItem.originalImage&&mouseItem.originalImage.src;
             renderBatchList();
             batchIndex=mouseTarget;
             originalImage=niImg;
             foregroundImage=niImg;
             previewImage.src=niImg.src;
-            previewImage.classList.add('transparentPreview');
             showBatchImage(mouseTarget);
-            setBatchBgStatus('✅ Only the painted area was removed from batch image '+(mouseTarget+1)+'.');
+            setBatchBgStatus('✅ Mouse background removal applied to batch image '+(mouseTarget+1)+'.');
           }
-
           batchBgMouseMode=false;
           batchBgMouseTargetIndex=-1;
         }
-
-        try{
-          document.dispatchEvent(new CustomEvent('proStudioBackgroundChanged'));
-        }catch(e){}
       };
-
-      niImg.onerror=function(){
-        setBackgroundStatus('Unable to create the transparent mouse-removal result.');
-      };
-
       niImg.src=c.toDataURL('image/png');
     }catch(err){
-      console.error('Mouse background removal error:',err);
-      setBackgroundStatus('Background removal failed. Please try painting again.');
+      console.error(err);setBackgroundStatus('Background removal failed. Try a smaller brush or adjust tolerance.');
     }
   };
 }
@@ -5239,7 +5213,6 @@ async function removeBackgroundLocal(){
     var blob=await aiRemove(originalImage.src,Object.assign(cfg,{
       /* Use the higher-quality general foreground model. It is not human-only,
          so animals, pets, products and other foreground subjects are preserved. */
-      model:'medium',
       progress:function(key,current,total){
         var pct=total?Math.round(current/total*100):0;
         if(progressBar) progressBar.style.width=Math.max(0,Math.min(100,pct))+'%';
@@ -5247,6 +5220,7 @@ async function removeBackgroundLocal(){
         setBackgroundStatus('🤖 AI background removal: protecting foreground subject (including animals)... '+pct+'%');
       }
     }));
+    blob=await refineForegroundEdges(blob);
 
     /* IMPORTANT: keep the AI PNG alpha channel intact.
        The video result is a clean transparent cutout/checkerboard preview,
