@@ -4405,7 +4405,7 @@ function batchApplyImageToIndex(index,bg){
     }catch(err){reject(err);}
   });
 }
-/* FAST BACKGROUND REMOVAL ENGINE */
+/* STRONG + FAST AI BACKGROUND REMOVAL ENGINE */
 var __bgRemovalModulePromise=null;
 function getBackgroundRemovalEngine(){
   if(!__bgRemovalModulePromise){
@@ -4419,7 +4419,13 @@ function getBackgroundRemovalEngine(){
 }
 function getFastBackgroundRemovalConfig(){
   var hasGPU=!!(window.navigator&&navigator.gpu);
-  return {model:hasGPU?'medium':'small',device:hasGPU?'gpu':'cpu',proxyToWorker:!hasGPU};
+  /* Keep a strong general model for clean subject edges while selecting the
+     fastest available execution path. */
+  return {
+    model:'medium',
+    device:hasGPU?'gpu':'cpu',
+    proxyToWorker:!hasGPU
+  };
 }
 
 async function batchRemoveBackgroundIndex(index){
@@ -5135,77 +5141,81 @@ if(applyBgMarksBtn){
 if(window.requestIdleCallback){requestIdleCallback(function(){getBackgroundRemovalEngine().catch(function(){});},{timeout:2500});}
 else{setTimeout(function(){getBackgroundRemovalEngine().catch(function(){});},1200);}
 
-/* AI-powered automatic background removal. */
+/* AI-powered automatic background removal: strong first pass + safe local fallback. */
 async function removeBackgroundLocal(){
   if(!originalImage){setBackgroundStatus('Upload an image first.');return;}
+  var sourceImage=originalImage;
+  var sourceUrl=sourceImage.currentSrc||sourceImage.src;
+  if(!sourceUrl){setBackgroundStatus('Image source is not ready yet.');return;}
   try{
-    setBackgroundStatus('🤖 AI is detecting the subject automatically — same clean cutout style as the video.');
-    if(progressWrap) progressWrap.style.display='block';
-    if(progressBar) progressBar.style.width='0%';
-    if(progressText) progressText.textContent='AI background removal: detecting subject (people / animals / objects)...';
+    setBackgroundStatus('🤖 Strong AI background removal is detecting the foreground...');
+    if(progressWrap)progressWrap.style.display='block';
+    if(progressBar)progressBar.style.width='0%';
+    if(progressText)progressText.textContent='AI background removal: preparing strong edge detection...';
 
     var aiRemove=await getBackgroundRemovalEngine();
     var cfg=getFastBackgroundRemovalConfig();
-    var blob=await aiRemove(originalImage.src,Object.assign(cfg,{
-      /* Use the higher-quality general foreground model. It is not human-only,
-         so animals, pets, products and other foreground subjects are preserved. */
-      model:'medium',
+    var blob=await aiRemove(sourceUrl,Object.assign({},cfg,{
       progress:function(key,current,total){
         var pct=total?Math.round(current/total*100):0;
-        if(progressBar) progressBar.style.width=Math.max(0,Math.min(100,pct))+'%';
-        if(progressText) progressText.textContent='AI background removal: '+pct+'%';
-        setBackgroundStatus('🤖 AI background removal: protecting foreground subject (including animals)... '+pct+'%');
+        pct=Math.max(0,Math.min(100,pct));
+        if(progressBar)progressBar.style.width=pct+'%';
+        if(progressText)progressText.textContent='AI background removal: '+pct+'%';
+        setBackgroundStatus('🤖 Strong AI background removal: refining subject and edges... '+pct+'%');
       }
     }));
+    if(!blob||!blob.size)throw new Error('AI returned an empty result');
 
-    /* IMPORTANT: keep the AI PNG alpha channel intact.
-       The video result is a clean transparent cutout/checkerboard preview,
-       so DO NOT paint white behind it and DO NOT flatten semi-transparent edges. */
     var cutoutUrl=URL.createObjectURL(blob);
-    var ni=new Image();
-    ni.onload=function(){
-      try{
-        var w=ni.naturalWidth,h=ni.naturalHeight;
-        originalImage=ni;
-        foregroundImage=ni;
-        imageWidth=w;imageHeight=h;
-        widthInput.value=w;heightInput.value=h;
-        widthUnit.value=heightUnit.value='px';keepRatio.checked=true;
-        megapixelInput.value=(w*h/1000000).toFixed(2);
-        previewImage.src=cutoutUrl;
-        cropImage.src=cutoutUrl;
-        formatSelect.value='image/png';
+    var ni=await new Promise(function(resolve,reject){
+      var out=new Image();
+      out.onload=function(){resolve(out);};
+      out.onerror=function(){reject(new Error('AI output could not be decoded'));};
+      out.src=cutoutUrl;
+    });
 
-        /* Transparent cutout is the actual processed image. */
-        backgroundMode='removed';
-        previewImage.classList.add('transparentPreview');
-        backgroundImage=null;
-        backgroundColor.value='#ffffff';
-        if(bgColorPicker)bgColorPicker.value='#ffffff';
+    var w=ni.naturalWidth,h=ni.naturalHeight;
+    if(!w||!h)throw new Error('AI output has invalid dimensions');
 
-        if(progressBar)progressBar.style.width='100%';
-        if(progressText)progressText.textContent='AI background removal: complete';
-        setBackgroundStatus('✅ Background removed cleanly like the video. Transparent PNG ready.');
-        try{document.dispatchEvent(new CustomEvent('proStudioBackgroundChanged'));}catch(e){}
-        info.innerHTML='AI background removal applied<br/>'+w+' × '+h+' px<br/><b>Clean transparent cutout — people / animals / objects preserved</b>';
-        if(progressWrap)setTimeout(function(){progressWrap.style.display='none';},900);
+    /* Preserve original separately so the fallback/manual tools can still use it. */
+    if(!sourceImage._originalBeforeBgRemoval)ni._originalBeforeBgRemoval=sourceImage;
+    originalImage=ni;
+    foregroundImage=ni;
+    imageWidth=w;imageHeight=h;
+    widthInput.value=w;heightInput.value=h;
+    widthUnit.value=heightUnit.value='px';keepRatio.checked=true;
+    megapixelInput.value=(w*h/1000000).toFixed(2);
+    previewImage.src=cutoutUrl;
+    cropImage.src=cutoutUrl;
+    formatSelect.value='image/png';
+    backgroundMode='removed';
+    previewImage.classList.add('transparentPreview');
+    backgroundImage=null;
+    backgroundColor.value='#ffffff';
+    if(bgColorPicker)bgColorPicker.value='#ffffff';
 
-        /* Keep the URL alive because previewImage/cropImage use it. */
-        if(ni._oldCutoutUrl)URL.revokeObjectURL(ni._oldCutoutUrl);
-        ni._oldCutoutUrl=cutoutUrl;
-      }catch(e){
-        URL.revokeObjectURL(cutoutUrl);
-        console.error(e);
-        if(progressWrap)progressWrap.style.display='none';
-        setBackgroundStatus('AI result could not be finalized.');
-      }
-    };
-    ni.onerror=function(){URL.revokeObjectURL(cutoutUrl);setBackgroundStatus('AI output could not be decoded.');};
-    ni.src=cutoutUrl;
+    if(progressBar)progressBar.style.width='100%';
+    if(progressText)progressText.textContent='AI background removal: complete';
+    setBackgroundStatus('✅ Strong AI background removal complete. Clean transparent PNG ready.');
+    try{document.dispatchEvent(new CustomEvent('proStudioBackgroundChanged'));}catch(e){}
+    info.innerHTML='Strong AI background removal applied<br/>'+w+' × '+h+' px<br/><b>Transparent cutout with subject and edge detail preserved</b>';
+    if(progressWrap)setTimeout(function(){progressWrap.style.display='none';},700);
+    ni._oldCutoutUrl=cutoutUrl;
   }catch(err){
-    console.error('AI background removal error:',err);
-    if(progressWrap)progressWrap.style.display='none';
-    setBackgroundStatus('⚠️ AI model could not load. Please check your internet connection and try again.');
+    console.error('Strong AI background removal error:',err);
+    /* Restore the original before using the existing edge-connected local fallback. */
+    originalImage=sourceImage;
+    foregroundImage=sourceImage;
+    setBackgroundStatus('⚠️ AI service failed. Trying local background detection...');
+    try{
+      removeBackgroundFallback();
+      setBackgroundStatus('⚠️ AI was unavailable. Local edge-based background removal was applied; use Remove with Mouse for difficult edges.');
+    }catch(fallbackErr){
+      console.error('Background fallback error:',fallbackErr);
+      setBackgroundStatus('⚠️ Background removal failed. Please check your internet connection and try again.');
+    }finally{
+      if(progressWrap)setTimeout(function(){progressWrap.style.display='none';},500);
+    }
   }
 }
 
