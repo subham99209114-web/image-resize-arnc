@@ -2460,7 +2460,7 @@ function exitUploadOnlyMode(){
    HEIF/HEIC support is decoded to PNG in-browser before the existing
    resize/compress/crop/editor pipeline receives the image.
    No visual layout or existing controls are changed. */
-   Accepts files regardless of extension/MIME. Browser-native formats are
+   /* Accepts files regardless of extension/MIME. Browser-native formats are
    decoded normally; HEIC/HEIF and TIFF get a local decoder fallback.
    Unsupported/non-image files are rejected only after actual decoding fails.
 */
