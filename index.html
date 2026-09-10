@@ -2526,37 +2526,43 @@ function decodeTIFFUniversal(file, done){
 }
 
 function decodeHEICWithLibHeif(file, done){
+  /* Use the browser-ready WASM bundle. It keeps the decoder in one script,
+     which is more reliable on mobile than loading a separate WASM file. */
   loadExternalScriptOnce(
-    'https://cdn.jsdelivr.net/npm/libheif-js@1.23.2/libheif/libheif.js',
+    'https://cdn.jsdelivr.net/npm/libheif-js@1.19.8/libheif-wasm/libheif-bundle.js',
     'libheif',
     function(err){
-      if(err || !window.libheif){ done(new Error('libheif decoder could not be loaded.')); return; }
-      try{
-        var reader=new FileReader();
-        reader.onload=function(){
-          try{
-            var decoder=new window.libheif.HeifDecoder();
-            var images=decoder.decode(new Uint8Array(reader.result));
-            if(!images || !images.length) throw new Error('No HEIF image found.');
-            var image=images[0];
-            var w=image.get_width(), h=image.get_height();
-            if(!w || !h) throw new Error('Invalid HEIF dimensions.');
-            var canvas=document.createElement('canvas');
-            canvas.width=w; canvas.height=h;
-            var ctx=canvas.getContext('2d');
-            var imageData=ctx.createImageData(w,h);
-            image.display(imageData,function(displayData){
-              try{
-                if(!displayData) throw new Error('HEIF display failed.');
-                ctx.putImageData(imageData,0,0);
-                done(null,canvas.toDataURL('image/png'));
-              }catch(e){ done(e); }
-            });
-          }catch(e){ done(e); }
-        };
-        reader.onerror=function(){ done(new Error('Unable to read HEIF file.')); };
-        reader.readAsArrayBuffer(file);
-      }catch(e){ done(e); }
+      if(err || !window.libheif || !window.libheif.HeifDecoder){ done(new Error('HEIF decoder could not be loaded on this device.')); return; }
+      var reader=new FileReader();
+      reader.onload=function(){
+        try{
+          var decoder=new window.libheif.HeifDecoder();
+          var images=decoder.decode(new Uint8Array(reader.result));
+          if(!images || !images.length) throw new Error('No HEIF image found.');
+          var image=images[0];
+          var w=Number(image.get_width()), h=Number(image.get_height());
+          if(!w || !h || w<1 || h<1) throw new Error('Invalid HEIF dimensions.');
+          if(w*h>50000000) throw new Error('HEIF image is too large for mobile memory.');
+          var canvas=document.createElement('canvas');
+          canvas.width=w; canvas.height=h;
+          var ctx=canvas.getContext('2d',{willReadFrequently:true});
+          var imageData=ctx.createImageData(w,h);
+          var finished=false;
+          function finish(e,data){ if(finished)return; finished=true; done(e,data); }
+          image.display(imageData,function(displayData){
+            try{
+              if(!displayData) throw new Error('HEIF pixel conversion failed.');
+              ctx.putImageData(imageData,0,0);
+              var out=canvas.toDataURL('image/png');
+              if(!out || out.length<100) throw new Error('HEIF conversion produced no image.');
+              try{ if(typeof image.free==='function') image.free(); }catch(_e){}
+              finish(null,out);
+            }catch(e){ finish(e); }
+          });
+        }catch(e){ done(e); }
+      };
+      reader.onerror=function(){ done(new Error('Unable to read HEIF file.')); };
+      reader.readAsArrayBuffer(file);
     }
   );
 }
@@ -2583,14 +2589,13 @@ function decodeHEICWithHeic2Any(file, done){
 }
 
 function decodeHEICUniversal(file, done){
-  /* Mobile Chrome/Android does not natively decode HEIF and older heic2any
-     versions can fail or hang on mobile. Try libheif first, then keep the
-     existing heic2any fallback for compatibility. */
+  /* Mobile-safe order: bundled libheif first, then the existing fallback. */
   decodeHEICWithLibHeif(file,function(err,data){
     if(!err && data){ done(null,data); return; }
     decodeHEICWithHeic2Any(file,function(err2,data2){
       if(!err2 && data2){ done(null,data2); return; }
-      done(err2 || err || new Error('HEIF/HEIC could not be decoded.'));
+      var detail=(err2&&err2.message)||(err&&err.message)||'unknown decoder error';
+      done(new Error('HEIF/HEIC decode failed: '+detail));
     });
   });
 }
