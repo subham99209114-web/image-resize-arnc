@@ -2525,79 +2525,23 @@ function decodeTIFFUniversal(file, done){
   );
 }
 
-function decodeHEICWithLibHeif(file, done){
-  /* Use the browser-ready WASM bundle. It keeps the decoder in one script,
-     which is more reliable on mobile than loading a separate WASM file. */
-  loadExternalScriptOnce(
-    'https://cdn.jsdelivr.net/npm/libheif-js@1.19.8/libheif-wasm/libheif-bundle.js',
-    'libheif',
-    function(err){
-      if(err || !window.libheif || !window.libheif.HeifDecoder){ done(new Error('HEIF decoder could not be loaded on this device.')); return; }
-      var reader=new FileReader();
-      reader.onload=function(){
-        try{
-          var decoder=new window.libheif.HeifDecoder();
-          var images=decoder.decode(new Uint8Array(reader.result));
-          if(!images || !images.length) throw new Error('No HEIF image found.');
-          var image=images[0];
-          var w=Number(image.get_width()), h=Number(image.get_height());
-          if(!w || !h || w<1 || h<1) throw new Error('Invalid HEIF dimensions.');
-          if(w*h>50000000) throw new Error('HEIF image is too large for mobile memory.');
-          var canvas=document.createElement('canvas');
-          canvas.width=w; canvas.height=h;
-          var ctx=canvas.getContext('2d',{willReadFrequently:true});
-          var imageData=ctx.createImageData(w,h);
-          var finished=false;
-          function finish(e,data){ if(finished)return; finished=true; done(e,data); }
-          image.display(imageData,function(displayData){
-            try{
-              if(!displayData) throw new Error('HEIF pixel conversion failed.');
-              ctx.putImageData(imageData,0,0);
-              var out=canvas.toDataURL('image/png');
-              if(!out || out.length<100) throw new Error('HEIF conversion produced no image.');
-              try{ if(typeof image.free==='function') image.free(); }catch(_e){}
-              finish(null,out);
-            }catch(e){ finish(e); }
-          });
-        }catch(e){ done(e); }
-      };
-      reader.onerror=function(){ done(new Error('Unable to read HEIF file.')); };
-      reader.readAsArrayBuffer(file);
-    }
-  );
-}
-
-function decodeHEICWithHeic2Any(file, done){
+function decodeHEICUniversal(file, done){
   loadExternalScriptOnce(
     'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js',
     'heic2any',
     function(err){
-      if(err || !window.heic2any){ done(new Error('HEIC/HEIF fallback decoder could not be loaded.')); return; }
-      try{
-        window.heic2any({blob:file,toType:'image/png',quality:1})
-          .then(function(result){
-            var blob=Array.isArray(result)?result[0]:result;
-            var r=new FileReader();
-            r.onload=function(){ done(null,r.result); };
-            r.onerror=function(){ done(new Error('Unable to read converted HEIC/HEIF image.')); };
-            r.readAsDataURL(blob);
-          })
-          .catch(function(e){ done(e); });
-      }catch(e){ done(e); }
+      if(err || !window.heic2any){ done(new Error('HEIC/HEIF decoder could not be loaded.')); return; }
+      window.heic2any({blob:file,toType:'image/png',quality:1})
+        .then(function(result){
+          var blob=Array.isArray(result)?result[0]:result;
+          var r=new FileReader();
+          r.onload=function(){ done(null,r.result); };
+          r.onerror=function(){ done(new Error('Unable to read converted HEIC/HEIF image.')); };
+          r.readAsDataURL(blob);
+        })
+        .catch(function(e){ done(e); });
     }
   );
-}
-
-function decodeHEICUniversal(file, done){
-  /* Mobile-safe order: bundled libheif first, then the existing fallback. */
-  decodeHEICWithLibHeif(file,function(err,data){
-    if(!err && data){ done(null,data); return; }
-    decodeHEICWithHeic2Any(file,function(err2,data2){
-      if(!err2 && data2){ done(null,data2); return; }
-      var detail=(err2&&err2.message)||(err&&err.message)||'unknown decoder error';
-      done(new Error('HEIF/HEIC decode failed: '+detail));
-    });
-  });
 }
 
 function readImageUniversal(file, done){
