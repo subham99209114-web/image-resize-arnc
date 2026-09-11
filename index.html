@@ -1499,6 +1499,15 @@ gtag('config', 'G-MT3BX5SKR5', {
 }
 </style>
 
+<style id='select-area-ai-remove-bg-css'>
+/* New option only: existing Background Tools design/functions remain unchanged. */
+#selectAreaAiRemoveBgBtn{
+  grid-column:1 / -1;
+}
+@media(max-width:600px){
+  #selectAreaAiRemoveBgBtn{grid-column:auto;}
+}
+</style>
 </head>
 
 <body class='uploadOnlyMode'>
@@ -1584,6 +1593,7 @@ No image upload is required for local image processing.
 <b class='sectionTitle' data-collapse-section='backgroundToolsSection'>🖼&#65039; Background Tools</b>
 <div class='featureGrid'>
 <button id='removeBgBtn' type='button'>&#9986;&#65039; Remove Background</button>
+<button id='selectAreaAiRemoveBgBtn' type='button' class='selectAreaAiBtn'>🎯 Select Area AI Remove Background</button>
 <button id='paintRemoveBgBtn' type='button'>🖱&#65039; Remove with Mouse</button>
 <button id='clearBackgroundChangesBtn' type='button'>&#8617;&#65039; Clear Background Changes</button>
 <button id='addBgColorBtn' type='button'>🎨 Add Color Background</button>
@@ -5607,6 +5617,18 @@ removeBgBtn.onclick=function(){
   if(batchImages.length && batchIndex>=0){ batchRemoveBackgroundIndex(batchIndex); return; }
   removeBackgroundLocal();
 };
+
+/* Open the separate Freehand Area Select + AI Background Removal page.
+   The second uploaded HTML is preserved as its own page; no existing editor
+   controls or processing functions are replaced. */
+var selectAreaAiRemoveBgBtn=document.getElementById('selectAreaAiRemoveBgBtn');
+if(selectAreaAiRemoveBgBtn){
+  selectAreaAiRemoveBgBtn.onclick=function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    window.location.href='select-area-ai-remove.html';
+  };
+}
 
 addBgImageBtn.onclick=function(){
   if(!originalImage){setBackgroundStatus('Upload an image first.');return;}
