@@ -993,6 +993,44 @@ body.uploadOnlyMode #multiFileInput {
   }
 }
 </style>
+<style id='photo-merge-navigation-css'>
+/* Photo Editor + Merge Images & PDFs navigation
+   Additive only: existing ResizeImage.ARnc design and functions remain unchanged. */
+.photoMergeNav{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  width:100%;
+  margin:0 0 15px;
+}
+.photoMergeNav a{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:46px;
+  padding:12px 15px;
+  border-radius:10px;
+  background:linear-gradient(135deg,#087cf7,#32a9ff);
+  border:1px solid rgba(120,195,255,.62);
+  box-shadow:0 8px 22px rgba(8,124,247,.20);
+  color:#fff!important;
+  text-decoration:none!important;
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+  transition:transform .18s ease,box-shadow .18s ease,filter .18s ease;
+}
+.photoMergeNav a:hover{
+  transform:translateY(-1px);
+  box-shadow:0 11px 28px rgba(8,124,247,.34);
+  filter:brightness(1.05);
+}
+@media(max-width:600px){
+  .photoMergeNav{grid-template-columns:1fr;}
+}
+</style>
+
 <style id='show-additional-tools-css'>
 .additionalToolsToggle{
   width:100%;
@@ -1650,6 +1688,10 @@ No image upload is required for local image processing.
 
 <input accept='*/*' id='multiFileInput' multiple='multiple' type='file'/>
 <div id='postUploadTools' style='display:none;'>
+<div class='photoMergeNav' id='photoMergeNav' aria-label='Professional tools'>
+  <a href='photo-editor.html' aria-label='Open Photo Editor'>🖼️ Photo Editor</a>
+  <a href='merge-studio.html' aria-label='Open Merge Images & PDFs'>📄 Merge Images &amp; PDFs</a>
+</div>
 <div class='additionalToolsToggle' id='showAdditionalToggle' style='display:none;'>
   <label class='additionalToolsLabel'>
     <input aria-controls='additionalToolsGroup' id='showAdditionalTools' type='checkbox'/>
@@ -1664,7 +1706,7 @@ No image upload is required for local image processing.
 <b class='sectionTitle' data-collapse-section='backgroundToolsSection'>🖼&#65039; Background Tools</b>
 <div class='featureGrid'>
 <button id='removeBgBtn' type='button'>&#9986;&#65039; Remove Background</button>
-<button id='selectAreaAiRemoveBgBtn' type='button' class='selectAreaAiBtn'>🎯 Select Area AI Remove Background</button>
+<button id='selectAreaAiRemoveBgBtn' type='button' class='selectAreaAiBtn' style="background-color: blue;">🎯 Select Area AI Remove Background</button>
 <button id='paintRemoveBgBtn' type='button'>🖱&#65039; Remove with Mouse</button>
 <button id='clearBackgroundChangesBtn' type='button'>&#8617;&#65039; Clear Background Changes</button>
 <button id='addBgColorBtn' type='button'>🎨 Add Color Background</button>
