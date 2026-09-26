@@ -1659,7 +1659,7 @@ Resize, compress, crop and edit your photos directly in your browser.
 No image upload is required for local image processing.
   </b></p>
 <label class='upload' for='fileInput' id='singleUploadLabel' role='button' tabindex='0'>
-  📁 <b>Click here to select Single Image</b>
+  📁 <b>Click here to Choose/select Single Image</b>
 <br/><br/>
   <b>Any Image Format / Extension</b>
 </label>
@@ -1667,17 +1667,17 @@ No image upload is required for local image processing.
 <input accept='*/*' id='fileInput' type='file'/>
 
 <label class='upload multiUpload' for='multiFileInput' id='multiUploadLabel' role='button' tabindex='0'>
-  📚 <b>Select Multiple Images</b>
+  📚 <b>Choose/Select Multiple Images</b>
 <br/><br/>
   <b>Batch / Bulk Resize &amp; Compress</b>
 </label>
 
 <!-- PDF to Image: signed-in tool placed directly below Select Multiple Images. -->
-<div class='proFeatureBox signinProtectedTool' id='pdfToImageTool'>
+<div class='proFeatureBox signinProtectedTool' id='pdfToImageTool' style="background-color: blueviolet;">
   <b>📄 Convert PDF to Image</b>
   <div class='studioSub' style='margin-top:4px;'>Convert every PDF page into separate JPG, PNG or WEBP images directly in your browser.</div>
   <div class='pdfToolRow' style='margin-top:10px;'>
-    <button id='pdfToImageSelectBtn' type='button'>📄 Select PDF(s) files</button>
+    <button id='pdfToImageSelectBtn' type='button' style="background-color: red;">📄 Choose/Select PDF(s) files</button>
     <select id='pdfImageFormat' aria-label='PDF image format'>
       <option value='image/jpeg'>JPG</option>
       <option value='image/png'>PNG</option>
@@ -1706,10 +1706,10 @@ No image upload is required for local image processing.
   <a href='Photo_Editor_ARnc/' aria-label='Open Photo Editor'>🖼️ Photo Editor</a>
   <a href='Merge_Studio_ARnc/' aria-label='Open Merge Images & PDFs'>📄 Merge Images &amp; PDFs</a>
 </div>
-<div class='additionalToolsToggle' id='showAdditionalToggle' style='display:none;'>
+<div class='additionalToolsToggle' id='showAdditionalToggle' style='display:none; background-color: yellow;'>
   <label class='additionalToolsLabel'>
     <input aria-controls='additionalToolsGroup' id='showAdditionalTools' type='checkbox'/>
-    <span>Show Additional/Professional</span>
+    <span style="color: black;">Show Additional/Professional</span>
   </label>
 </div>
 <div class='proFeatureBox signinProtectedQuickPreset'><b>🎯 Quick Presets</b><div class='presetRow'><select id='quickPreset'><option value=''>Select preset...</option><option value='mobile'>📱 Mobile &#8212; 1080px</option><option value='instagram'>📸 Instagram &#8212; 1080&#215;1080</option><option value='story'>📱 Instagram Story &#8212; 1080&#215;1920</option><option value='youtube'>&#9654;&#65039; YouTube Thumbnail &#8212; 1280&#215;720</option><option value='passport'>🪪 Passport Photo &#8212; 600&#215;600</option><option value='print'>🖨 Print &#8212; 300 DPI</option><option value='website'>🌐 Website &#8212; Web Optimized</option><option value='email'>📧 Email &#8212; Small Size</option><option value='max'>&#9889; Maximum Compression</option></select><select id='aspectPreset'><option value=''>Aspect Ratio...</option><option value='1:1'>1:1</option><option value='4:5'>4:5</option><option value='16:9'>16:9</option><option value='9:16'>9:16</option></select></div></div>
@@ -6244,6 +6244,7 @@ plusBtn.onclick=function(){q('superStudio').querySelectorAll('.studioTab').forEa
        font-size:18px;
        font-weight:bold;
        box-shadow:0 4px 10px rgba(0,0,0,0.2);
+       background-color: blue;
      ">
     click button and going on other "Image Resize" website
   </a>
