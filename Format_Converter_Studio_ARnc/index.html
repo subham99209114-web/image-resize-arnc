@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<meta name="description" content="All Format Converter Studio — convert images, PDF, SVG, TIFF, HEIC/HEIF, GIF, ICO and browser-readable RAW files locally.">
+<title>Format Converter Studio.ARnc</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/UTIF.js/3.1.0/UTIF.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<style>
+*{box-sizing:border-box}
+:root{
+ --bg1:#071b14;--bg2:#32104d;--card:rgba(255,255,255,.10);
+ --line:rgba(255,255,255,.16);--text:#f8fafc;--muted:#cbd5e1;
+ --green:#22c55e;--blue:#3b82f6;--orange:#f97316;--red:#ef4444;
+}
+body{margin:0;min-height:100vh;width:100%;font-family:Inter,Arial,sans-serif;color:var(--text);
+ background:linear-gradient(135deg,#006400,#800080);padding:14px}
+.container{width:100%;max-width:none;margin:0 auto;background:rgba(255,255,255,.10);
+ border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+ border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.32);overflow:hidden}
+header{padding:26px 28px;border-bottom:1px solid var(--line)}
+h1{margin:0;font-size:clamp(25px,4vw,38px)}
+header p{margin:8px 0 0;color:var(--muted)}
+.panel{padding:22px 28px}
+.drop{border:2px dashed #60a5fa;border-radius:18px;padding:32px 18px;text-align:center;
+ background:rgba(0,0,0,.10);transition:.2s}
+.drop.drag{background:rgba(96,165,250,.16);transform:scale(1.005)}
+.drop .icon{font-size:45px}.drop h2{margin:8px 0 5px}.drop p{color:var(--muted);margin:0 0 17px}
+input[type=file]{display:none}
+.btn{border:0;border-radius:11px;padding:11px 16px;font-weight:700;color:#fff;cursor:pointer;
+ background:#334155;transition:.2s}.btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn.green{background:var(--green);color:#06240f}.btn.blue{background:var(--blue)}
+.btn.orange{background:var(--orange)}.btn.red{background:var(--red)}
+.controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:20px}
+.control{background:rgba(0,0,0,.13);border:1px solid var(--line);border-radius:15px;padding:14px}
+.control label{display:block;font-size:12px;color:#dbeafe;margin-bottom:7px;font-weight:700}
+select,input[type=number],input[type=text]{width:100%;padding:10px 11px;border-radius:9px;
+ border:1px solid #64748b;background:rgba(15,23,42,.72);color:#fff;outline:none}
+input[type=range]{width:100%}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.switch{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
+.switch input{accent-color:var(--green)}
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}
+.stat{background:rgba(0,0,0,.14);border:1px solid var(--line);padding:9px 12px;border-radius:10px;font-size:13px}
+.progress{height:9px;background:rgba(255,255,255,.15);border-radius:10px;overflow:hidden;margin-top:18px;display:none}
+.progress div{height:100%;width:0;background:#22c55e;transition:.15s}
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:15px;margin-top:20px}
+.card{background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.thumb{height:190px;background:#0f172a;display:flex;align-items:center;justify-content:center;position:relative}
+.thumb img{max-width:100%;max-height:100%;object-fit:contain}
+.thumb .fileicon{font-size:55px}
+.cardbody{padding:13px}.name{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{font-size:12px;color:var(--muted);line-height:1.7;margin:7px 0 10px}
+.card .btn{width:100%}.empty{text-align:center;color:var(--muted);padding:30px;border:1px dashed var(--line);
+ border-radius:14px;margin-top:18px}
+.badges{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.badge{font-size:11px;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid var(--line)}
+.badge.ok{background:rgba(34,197,94,.16)}.badge.warn{background:rgba(249,115,22,.16)}
+.note{display:block;color:#cbd5e1;margin-top:7px;line-height:1.5;font-size:12px}
+.section-title{margin:22px 0 0;font-size:17px}
+footer{padding:18px 28px;color:#cbd5e1;font-size:12px;border-top:1px solid var(--line)}
+#pdfOptions{display:none}
+@media(max-width:1100px){
+ .controls{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .results{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:850px){
+ body{padding:10px}
+ .controls{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .results{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .thumb{height:230px}
+}
+@media(max-width:560px){
+ body{padding:0}
+ .container{border-radius:0;min-height:100vh}
+ .panel,header,footer{padding:16px}
+ .controls{grid-template-columns:1fr}
+ .results{grid-template-columns:1fr;gap:14px}
+ .thumb{height:240px;min-height:210px}
+ .drop{padding:24px 12px}
+ .btn{flex:1;min-width:130px}
+ .actions .btn{min-width:145px}
+ .actions{gap:8px}
+ .stat{flex:1}
+ .row{width:100%}
+ .row input{min-width:0;flex:1}
+}
+@media(orientation:landscape) and (max-height:600px){
+ body{padding:6px}
+ .container{border-radius:14px}
+ .thumb{height:190px;min-height:170px}
+ header{padding:18px 22px}
+ .panel{padding:18px 22px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>🖼️ All Format Converter Studio</h1>
+<p>Convert, resize, compress and batch-process modern, legacy and document image formats directly in your browser.</p>
+<div class="badges">
+ <span class="badge ok">JPG / JPEG</span><span class="badge ok">PNG</span><span class="badge ok">WebP</span>
+ <span class="badge ok">AVIF</span><span class="badge">GIF</span><span class="badge">TIFF</span>
+ <span class="badge">SVG</span><span class="badge">ICO</span><span class="badge">PDF</span>
+ <span class="badge warn">HEIC / HEIF input</span><span class="badge warn">RAW input*</span>
+</div>
+</header>
+
+<div class="panel">
+<div id="drop" class="drop">
+ <div class="icon">📤</div>
+ <h2>Choose Files</h2>
+ <p>JPG, JPEG, PNG, WebP, AVIF, BMP, GIF, TIFF, SVG, ICO, PDF, HEIC/HEIF and supported RAW camera files</p>
+ <label class="btn blue" for="files">📁 Choose Files</label>
+ <input id="files" type="file" accept="image/*,application/pdf,.jpg,.jpeg,.png,.webp,.avif,.bmp,.gif,.tif,.tiff,.svg,.ico,.pdf,.heic,.heif,.dng,.cr2,.cr3,.nef,.arw,.orf,.rw2,.raf,.pef,.srw,.raw" multiple>
+ <small class="note">Files stay in your browser during processing. HEIC/HEIF, TIFF, PDF and SVG use browser-side decoders; RAW support depends on the browser/decoder available for that camera format.</small>
+</div>
+
+<h3 class="section-title">Conversion Studio</h3>
+<div class="controls">
+ <div class="control">
+  <label>OUTPUT FORMAT</label>
+  <select id="format">
+   <option value="auto">Auto / Best Available</option>
+   <option value="image/jpeg">JPG / JPEG</option>
+   <option value="image/png">PNG</option>
+   <option value="image/webp">WebP</option>
+   <option value="image/avif">AVIF</option>
+   <option value="image/bmp">BMP</option>
+   <option value="image/gif">GIF</option>
+   <option value="image/tiff">TIFF</option>
+   <option value="image/x-icon">ICO</option>
+   <option value="image/svg+xml">SVG</option>
+   <option value="image/heic">HEIC / HEIF</option>
+   <option value="image/x-adobe-dng">RAW / DNG</option>
+   <option value="application/pdf">PDF</option>
+  </select>
+  <small class="note">HEIC/HEIF uses a browser-side encoder when supported. DNG export works from decoded images as an RGB-DNG-style file; true camera-sensor RAW → DNG conversion requires a dedicated RAW decoder.</small>
+ </div>
+
+ <div class="control">
+  <label>QUALITY <span id="qv">90</span>%</label>
+  <input id="quality" type="range" min="1" max="100" value="90">
+  <small class="note">Applies to lossy formats such as JPG, WebP and AVIF.</small>
+ </div>
+
+ <div class="control">
+  <label>RESIZE MODE</label>
+  <select id="resizeMode">
+   <option value="none">Keep Original Size</option><option value="width">Set Width</option>
+   <option value="height">Set Height</option><option value="both">Exact Width × Height</option>
+   <option value="percent">Percentage</option>
+  </select>
+  <div class="row" style="margin-top:8px">
+   <input id="width" type="number" min="1" placeholder="Width">
+   <input id="height" type="number" min="1" placeholder="Height">
+   <input id="percent" type="number" min="1" max="1000" value="100" placeholder="%">
+  </div>
+ </div>
+
+ <div class="control">
+  <label>BACKGROUND</label>
+  <select id="background">
+   <option value="transparent">Transparent</option><option value="#ffffff">White</option><option value="#000000">Black</option>
+  </select>
+  <small class="note">Used when the target format cannot store transparency, including JPG and BMP.</small>
+ </div>
+
+ <div class="control">
+  <label>PDF PAGE SIZE</label>
+  <select id="pdfSize">
+   <option value="fit">Fit Image</option><option value="a4">A4</option>
+   <option value="letter">Letter</option><option value="original">Image Proportional</option>
+  </select>
+ </div>
+
+ <div class="control">
+  <label>PDF ORIENTATION</label>
+  <select id="pdfOrientation"><option value="auto">Auto</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select>
+ </div>
+
+ <div class="control">
+  <label>SVG SCALE</label>
+  <select id="svgScale"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select>
+  <small class="note">Controls rasterization size when an SVG is converted to a bitmap/PDF.</small>
+ </div>
+
+ <div class="control">
+  <label>ICO SIZE</label>
+  <select id="icoSize"><option value="256">256 × 256</option><option value="128">128 × 128</option><option value="64">64 × 64</option><option value="32">32 × 32</option><option value="16">16 × 16</option></select>
+ </div>
+</div>
+
+<div class="actions">
+ <button class="btn green" id="convert">⚡ Convert All</button>
+ <button class="btn orange" id="zip">📦 Download ZIP</button>
+ <button class="btn" id="clear">🗑️ Clear</button>
+ <label class="switch"><input id="strip" type="checkbox" checked> Process locally / remove metadata where browser processing permits</label>
+</div>
+
+<div class="progress" id="progress"><div id="bar"></div></div>
+<div class="stats" id="stats"></div>
+<div id="results"><div class="empty">No files selected yet.</div></div>
+</div>
+
+<footer>
+<strong>Privacy:</strong> Conversion is performed locally in the browser whenever the selected decoder/encoder is available. External CDN libraries are used only to provide browser-side format decoding/encoding and ZIP/PDF utilities. RAW conversion is limited by browser decoder support and does not preserve the original camera RAW sensor file.
+</footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const files=$('files'),drop=$('drop'),results=$('results'),stats=$('stats');
+let items=[],converted=[];
+
+if(window.pdfjsLib){
+ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+$('quality').oninput=()=>{$('qv').textContent=$('quality').value};
+$('resizeMode').onchange=()=>{
+ const m=$('resizeMode').value;
+ $('width').style.display=(m==='width'||m==='both')?'block':'none';
+ $('height').style.display=(m==='height'||m==='both')?'block':'none';
+ $('percent').style.display=m==='percent'?'block':'none';
+};
+$('resizeMode').dispatchEvent(new Event('change'));
+
+files.onchange=e=>addFiles([...e.target.files]);
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag')}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag')}));
+drop.addEventListener('drop',e=>addFiles([...e.dataTransfer.files]));
+
+function isSupportedName(n){
+ return /\.(jpe?g|png|webp|avif|bmp|gif|tiff?|svg|ico|pdf|heic|heif|dng|cr2|cr3|nef|arw|orf|rw2|raf|pef|srw|raw)$/i.test(n);
+}
+function addFiles(fs){
+ const accepted=fs.filter(f=>f.type.startsWith('image/')||f.type==='application/pdf'||isSupportedName(f.name));
+ items.push(...accepted.map(file=>({file,id:crypto.randomUUID()})));
+ render();
+}
+function fmtBytes(n){
+ if(!n)return '0 B';const u=['B','KB','MB','GB'];const i=Math.min(3,Math.floor(Math.log(n)/Math.log(1024)));
+ return (n/Math.pow(1024,i)).toFixed(i?2:0)+' '+u[i];
+}
+function baseName(n){return n.replace(/\.[^.]+$/,'')}
+function extForMime(m){
+ return ({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/avif':'avif','image/bmp':'bmp',
+ 'image/gif':'gif','image/tiff':'tiff','image/x-icon':'ico','image/svg+xml':'svg','image/heic':'heic','image/x-adobe-dng':'dng','application/pdf':'pdf'})[m]||'bin';
+}
+function typeLabel(file){
+ const n=file.name.toLowerCase();
+ if(/\.pdf$/.test(n)||file.type==='application/pdf')return 'PDF';
+ if(/\.heic$|\.heif$/.test(n))return 'HEIC/HEIF';
+ if(/\.tiff?$/.test(n))return 'TIFF';
+ if(/\.svg$/.test(n))return 'SVG';
+ if(/\.ico$/.test(n))return 'ICO';
+ if(/\.(dng|cr2|cr3|nef|arw|orf|rw2|raf|pef|srw|raw)$/.test(n))return 'RAW';
+ return (file.type||'image').replace('image/','').toUpperCase();
+}
+function iconFor(file){const t=typeLabel(file);return t==='PDF'?'📄':t==='RAW'?'📷':t==='HEIC/HEIF'?'🟦':t==='SVG'?'🔷':t==='TIFF'?'🖼️':'🖼️'}
+function render(){
+ if(!items.length){results.innerHTML='<div class="empty">No files selected yet.</div>';return}
+ results.innerHTML='';
+ items.forEach((it)=>{
+  const url=URL.createObjectURL(it.file),card=document.createElement('div');card.className='card';
+  const isVisual=/\.(jpe?g|png|webp|avif|bmp|gif|tiff?|svg|ico|heic|heif)$/i.test(it.file.name);
+  card.innerHTML=`<div class="thumb">${isVisual?`<img src="${url}" alt="" onerror="this.remove();this.parentNode.innerHTML='<div class=\\'fileicon\\'>${iconFor(it.file)}</div>'">`:`<div class="fileicon">${iconFor(it.file)}</div>`}</div>
+  <div class="cardbody"><div class="name">${escapeHtml(it.file.name)}</div>
+  <div class="meta">Original: ${fmtBytes(it.file.size)}<br>Type: ${escapeHtml(typeLabel(it.file))}<br>Status: Ready</div>
+  <button class="btn red" data-remove="${it.id}">Remove</button></div>`;
+  results.appendChild(card);
+ });
+ results.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{items=items.filter(x=>x.id!==b.dataset.remove);render()});
+ stats.innerHTML=`<div class="stat">Files: <b>${items.length}</b></div><div class="stat">Selected size: <b>${fmtBytes(items.reduce((a,x)=>a+x.file.size,0))}</b></div>`;
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+function blobToArrayBuffer(blob){return blob.arrayBuffer()}
+async function blobFromCanvas(canvas,mime,q){
+ return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Browser does not support this output format.')),mime,q));
+}
+async function imageFromBlob(blob){
+ return new Promise((resolve,reject)=>{
+  const url=URL.createObjectURL(blob),img=new Image();
+  img.onload=()=>{URL.revokeObjectURL(url);resolve(img)};
+  img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Image decoder could not read this file.'))};
+  img.src=url;
+ });
+}
+async function decodeTiff(file){
+ if(!window.UTIF)throw new Error('TIFF decoder library is unavailable.');
+ const buf=await file.arrayBuffer(),ifds=UTIF.decode(buf);
+ if(!ifds.length)throw new Error('No TIFF image found.');
+ UTIF.decodeImage(buf,ifds[0]);
+ const rgba=UTIF.toRGBA8(ifds[0]),w=ifds[0].width,h=ifds[0].height;
+ const c=document.createElement('canvas');c.width=w;c.height=h;
+ c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(rgba),w,h));
+ return c;
+}
+async function decodeHeic(file){
+ if(!window.heic2any)throw new Error('HEIC/HEIF decoder library is unavailable.');
+ const out=await heic2any({blob:file,toType:'image/png',quality:1});
+ const b=Array.isArray(out)?out[0]:out;
+ return imageFromBlob(b);
+}
+async function decodePdf(file){
+ if(!window.pdfjsLib)throw new Error('PDF decoder library is unavailable.');
+ const data=await file.arrayBuffer(),pdf=await pdfjsLib.getDocument({data}).promise;
+ const pages=[];
+ for(let p=1;p<=pdf.numPages;p++){
+  const page=await pdf.getPage(p),vp=page.getViewport({scale:2});
+  const c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);
+  await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+  pages.push(c);
+ }
+ return pages;
+}
+async function decodeSvg(file,scale){
+ const text=await file.text();
+ const blob=new Blob([text],{type:'image/svg+xml'}),url=URL.createObjectURL(blob);
+ try{
+  const img=await imageFromBlob(blob);
+  const w=(img.naturalWidth||img.width||800)*scale,h=(img.naturalHeight||img.height||600)*scale;
+  const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);return c;
+ }catch(e){
+  throw new Error('SVG could not be rasterized by this browser.');
+ }finally{URL.revokeObjectURL(url)}
+}
+async function decodeAny(file){
+ const name=file.name.toLowerCase();
+ if(/\.pdf$/.test(name)||file.type==='application/pdf')return {pages:await decodePdf(file),source:'PDF'};
+ if(/\.tiff?$/.test(name))return {pages:[await decodeTiff(file)],source:'TIFF'};
+ if(/\.heic$|\.heif$/.test(name))return {pages:[await decodeHeic(file)],source:'HEIC/HEIF'};
+ if(/\.svg$/.test(name))return {pages:[await decodeSvg(file,+$('svgScale').value)],source:'SVG'};
+ try{return {pages:[await imageFromBlob(file)],source:typeLabel(file)}}
+ catch(e){
+  throw new Error('This RAW or image format cannot be decoded by the current browser. Try converting the RAW file to DNG/JPG/PNG first, or use a browser with native RAW support.');
+ }
+}
+function toCanvas(source,w,h){
+ const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');
+ const bg=$('background').value;
+ if(bg!=='transparent'){ctx.fillStyle=bg;ctx.fillRect(0,0,w,h)}
+ ctx.drawImage(source,0,0,w,h);return c;
+}
+function targetSize(w,h){
+ const m=$('resizeMode').value;
+ if(m==='none')return[w,h];
+ if(m==='width'){const nw=Math.max(1,+$('width').value||w);return[nw,Math.round(h*nw/w)]}
+ if(m==='height'){const nh=Math.max(1,+$('height').value||h);return[Math.round(w*nh/h),nh]}
+ if(m==='both')return[Math.max(1,+$('width').value||w),Math.max(1,+$('height').value||h)];
+ const p=Math.max(1,+$('percent').value||100)/100;
+ return[Math.max(1,Math.round(w*p)),Math.max(1,Math.round(h*p))];
+}
+function bmpBlob(canvas){
+ const w=canvas.width,h=canvas.height,ctx=canvas.getContext('2d'),d=ctx.getImageData(0,0,w,h).data;
+ const row=Math.floor((24*w+31)/32)*4,size=54+row*h,buf=new ArrayBuffer(size),dv=new DataView(buf);
+ const ws=(o,v)=>dv.setUint32(o,v,true),sh=(o,v)=>dv.setUint16(o,v,true);
+ dv.setUint8(0,0x42);dv.setUint8(1,0x4d);ws(2,size);ws(10,54);ws(14,40);ws(18,w);ws(22,(-h)>>>0);
+ sh(26,1);sh(28,24);ws(34,row*h);
+ const out=new Uint8Array(buf),pad=row-w*3;let p=54;
+ for(let y=0;y<h;y++){for(let x=0;x<w;x++){const i=((h-1-y)*w+x)*4;out[p++]=d[i+2];out[p++]=d[i+1];out[p++]=d[i]}p+=pad}
+ return new Blob([buf],{type:'image/bmp'});
+}
+function icoBlob(canvas){
+ const s=Math.min(256,+$('icoSize').value||256),c=document.createElement('canvas');c.width=s;c.height=s;
+ const ctx=c.getContext('2d'),src=Math.min(canvas.width,canvas.height),ox=(canvas.width-src)/2,oy=(canvas.height-src)/2;
+ ctx.drawImage(canvas,ox,oy,src,src,0,0,s,s);
+ const d=ctx.getImageData(0,0,s,s).data,row=s*4;
+ const dib=40+s*row,buf=new ArrayBuffer(6+16+dib),dv=new DataView(buf),u8=new Uint8Array(buf);
+ dv.setUint16(0,0,true);dv.setUint16(2,1,true);dv.setUint16(4,1,true);
+ let o=6;dv.setUint8(o,s===256?0:s);o++;dv.setUint8(o,s===256?0:s);o++;dv.setUint8(o,0);o++;dv.setUint8(o,0);o++;
+ dv.setUint16(o,1,true);o+=2;dv.setUint16(o,32,true);o+=2;dv.setUint32(o,dib,true);o+=4;dv.setUint32(o,22,true);o+=4;
+ dv.setUint32(o,40,true);o+=4;dv.setInt32(o,s,true);o+=4;dv.setInt32(o,s*2,true);o+=4;dv.setUint16(o,1,true);o+=2;dv.setUint16(o,32,true);o+=2;
+ dv.setUint32(o,0,true);o+=4;dv.setUint32(o,s*row,true);o+=4;dv.setInt32(o,0,true);o+=4;dv.setInt32(o,0,true);o+=4;dv.setUint32(o,0,true);o+=4;dv.setUint32(o,0,true);o+=4;
+ for(let y=s-1;y>=0;y--)for(let x=0;x<s;x++){const i=(y*s+x)*4;u8[o++]=d[i+2];u8[o++]=d[i+1];u8[o++]=d[i];u8[o++]=d[i+3]}
+ return new Blob([buf],{type:'image/x-icon'});
+}
+async function gifBlob(canvas){
+ // Local, worker-free GIF encoder. This avoids CORS/origin-null errors
+ // when the HTML is opened directly with file://.
+ const ctx=canvas.getContext('2d',{willReadFrequently:true});
+ const w=Math.max(1,canvas.width|0),h=Math.max(1,canvas.height|0);
+ const rgba=ctx.getImageData(0,0,w,h).data;
+ // Fixed 3-3-2 RGB palette: 256 colors, deterministic and fast.
+ const palette=new Uint8Array(256*3);
+ let po=0;
+ for(let i=0;i<256;i++){
+  const r=(i>>5)&7, g=(i>>2)&7, b=i&3;
+  palette[po++]=Math.round(r*255/7);
+  palette[po++]=Math.round(g*255/7);
+  palette[po++]=Math.round(b*255/3);
+ }
+ const pixels=new Uint8Array(w*h);
+ for(let i=0,j=0;i<rgba.length;i+=4,j++){
+  const r=rgba[i],g=rgba[i+1],b=rgba[i+2];
+  pixels[j]=((r>>5)<<5)|((g>>5)<<2)|(b>>6);
+ }
+ // GIF LZW encoder for 8-bit indexed pixels.
+ function lzw(data,minCodeSize){
+  const clear=1<<minCodeSize, end=clear+1;
+  let codeSize=minCodeSize+1, next=end+1, dict=new Map();
+  let curBits=0,curVal=0,out=[];
+  const emit=code=>{
+   curVal|=code<<curBits;curBits+=codeSize;
+   while(curBits>=8){out.push(curVal&255);curVal>>>=8;curBits-=8;}
+  };
+  emit(clear);
+  if(!data.length){emit(end);if(curBits)out.push(curVal&255);return new Uint8Array(out)}
+  let prefix=data[0];
+  for(let i=1;i<data.length;i++){
+   const k=data[i],key=prefix+','+k;
+   if(dict.has(key)){prefix=dict.get(key);continue}
+   emit(prefix);
+   if(next<4096){dict.set(key,next++);if(next===(1<<codeSize)&&codeSize<12)codeSize++;}
+   else{emit(clear);dict=new Map();codeSize=minCodeSize+1;next=end+1;}
+   prefix=k;
+  }
+  emit(prefix);emit(end);if(curBits)out.push(curVal&255);
+  return new Uint8Array(out);
+ }
+ const compressed=lzw(pixels,8),bytes=[];
+ const pushStr=str=>{for(let i=0;i<str.length;i++)bytes.push(str.charCodeAt(i))};
+ pushStr('GIF89a');
+ const push16=n=>{bytes.push(n&255,(n>>8)&255)};
+ push16(w);push16(h);bytes.push(0xF7,0,0); // GCT, 256-color palette, background 0
+ for(const v of palette)bytes.push(v);
+ // Graphic Control Extension: no transparency, no delay.
+ bytes.push(0x21,0xF9,0x04,0x00,0x00,0x00,0x00,0x00);
+ // Image Descriptor.
+ bytes.push(0x2C);push16(0);push16(0);push16(w);push16(h);bytes.push(0x00);
+ bytes.push(0x08); // LZW minimum code size
+ for(let i=0;i<compressed.length;i+=255){
+  const n=Math.min(255,compressed.length-i);bytes.push(n);
+  for(let j=0;j<n;j++)bytes.push(compressed[i+j]);
+ }
+ bytes.push(0x00,0x3B);
+ return new Blob([new Uint8Array(bytes)],{type:'image/gif'});
+}
+async function tiffBlob(canvas){
+ const w=canvas.width,h=canvas.height;
+ const rgba=canvas.getContext('2d').getImageData(0,0,w,h).data;
+ // Prefer UTIF when available, but keep a local baseline TIFF encoder
+ // so TIFF export still works when the external library/CDN is unavailable.
+ if(window.UTIF && typeof UTIF.encodeImage==='function'){
+  try{
+   const arr=UTIF.encodeImage(rgba,w,h);
+   if(arr && arr.byteLength)return new Blob([arr],{type:'image/tiff'});
+  }catch(e){ /* use local fallback below */ }
+ }
+ return encodeTiffRGBA(rgba,w,h);
+}
+
+function encodeTiffRGBA(rgba,w,h){
+ // Self-contained baseline TIFF: uncompressed RGB, 8 bits/channel.
+ // Uses only standard TIFF tags so the downloaded file is readable by
+ // common image viewers/editors without relying on a CDN encoder.
+ const entryCount=12;
+ const ifdOffset=8;
+ const ifdSize=2+entryCount*12+4;
+ const bitsOffset=ifdOffset+ifdSize;
+ const stripOffset=bitsOffset+6;
+ const pixelBytes=w*h*3;
+ const total=stripOffset+pixelBytes;
+ const buf=new ArrayBuffer(total);
+ const dv=new DataView(buf);
+ const u8=new Uint8Array(buf);
+ const type={SHORT:3,LONG:4};
+ const tag=(off,tagNum,typeName,count,value)=>{
+  dv.setUint16(off,tagNum,true);
+  dv.setUint16(off+2,type[typeName],true);
+  dv.setUint32(off+4,count,true);
+  if(typeName==='SHORT' && count===1)dv.setUint16(off+8,value,true);
+  else dv.setUint32(off+8,value,true);
+ };
+ // TIFF header
+ u8[0]=0x49;u8[1]=0x49;
+ dv.setUint16(2,42,true);
+ dv.setUint32(4,ifdOffset,true);
+ // IFD
+ dv.setUint16(ifdOffset,entryCount,true);
+ let o=ifdOffset+2;
+ tag(o,256,'LONG',1,w);o+=12; // ImageWidth
+ tag(o,257,'LONG',1,h);o+=12; // ImageLength
+ tag(o,258,'SHORT',3,bitsOffset);o+=12; // BitsPerSample
+ tag(o,259,'SHORT',1,1);o+=12; // Compression = none
+ tag(o,262,'SHORT',1,2);o+=12; // Photometric = RGB
+ tag(o,273,'LONG',1,stripOffset);o+=12; // StripOffsets
+ tag(o,277,'SHORT',1,3);o+=12; // SamplesPerPixel = RGB
+ tag(o,278,'LONG',1,h);o+=12; // RowsPerStrip
+ tag(o,279,'LONG',1,pixelBytes);o+=12; // StripByteCounts
+ tag(o,284,'SHORT',1,1);o+=12; // PlanarConfiguration = chunky
+ tag(o,274,'SHORT',1,1);o+=12; // Orientation = top-left
+ tag(o,339,'SHORT',1,1);o+=12; // SampleFormat = unsigned integer
+ dv.setUint32(o,0,true); // next IFD = none
+ // 8-bit RGB channel depths
+ dv.setUint16(bitsOffset,8,true);
+ dv.setUint16(bitsOffset+2,8,true);
+ dv.setUint16(bitsOffset+4,8,true);
+ const rgb=new Uint8Array(buf,stripOffset,pixelBytes);
+ let p=0;
+ for(let i=0;i<rgba.length;i+=4){
+  rgb[p++]=rgba[i];rgb[p++]=rgba[i+1];rgb[p++]=rgba[i+2];
+ }
+ return new Blob([buf],{type:'image/tiff'});
+}
+function svgBlob(canvas){
+ const data=canvas.toDataURL('image/png');
+ const w=canvas.width,h=canvas.height;
+ const text=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><image width="${w}" height="${h}" href="${data}"/></svg>`;
+ return new Blob([text],{type:'image/svg+xml'});
+}
+async function pdfBlob(canvas){
+ const {jsPDF}=window.jspdf||{};
+ if(!jsPDF)throw new Error('PDF encoder library is unavailable.');
+ const orientation=$('pdfOrientation').value==='auto'?(canvas.width>=canvas.height?'landscape':'portrait'):$('pdfOrientation').value;
+ const size=$('pdfSize').value;
+ let doc;
+ if(size==='a4'||size==='letter'){
+  doc=new jsPDF({orientation,unit:'pt',format:size});
+  const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),margin=18;
+  const scale=Math.min((pw-margin*2)/canvas.width,(ph-margin*2)/canvas.height);
+  const w=canvas.width*scale,h=canvas.height*scale;
+  doc.addImage(canvas.toDataURL('image/jpeg',Math.max(.1,+$('quality').value/100)), 'JPEG',(pw-w)/2,(ph-h)/2,w,h);
+ }else{
+  const pxToPt=72/96,w=canvas.width*pxToPt,h=canvas.height*pxToPt;
+  doc=new jsPDF({orientation:w>=h?'landscape':'portrait',unit:'pt',format:[w,h]});
+  doc.addImage(canvas.toDataURL('image/jpeg',Math.max(.1,+$('quality').value/100)),'JPEG',0,0,w,h);
+ }
+ return doc.output('blob');
+}
+async function heicBlob(canvas){
+ if(typeof Worker==='undefined')throw new Error('HEIC encoder requires Web Worker support.');
+ const workerCode=`
+ self.onmessage=async e=>{
+  try{
+   const {data,width,height,quality}=e.data;
+   const mod=await import('https://cdn.jsdelivr.net/npm/@pbk20191/icodec@0.9.3/+esm');
+   const codec=mod.heic || mod.default?.heic;
+   if(!codec)throw new Error('HEIC encoder module is unavailable in this browser.');
+   await codec.loadEncoder();
+   const rgba=new Uint8ClampedArray(data);
+   const out=codec.encode({data:rgba,width,height},{quality:Math.max(1,Math.min(100,Math.round(quality*100))) });
+   self.postMessage({ok:true,buffer:out.buffer},[out.buffer]);
+  }catch(err){self.postMessage({ok:false,error:err&&err.message?err.message:String(err)})}
+ }`;
+ const worker=new Worker(URL.createObjectURL(new Blob([workerCode],{type:'text/javascript'})));
+ try{
+  const image=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height);
+  const result=await new Promise((resolve,reject)=>{
+   worker.onmessage=e=>e.data.ok?resolve(e.data):reject(new Error(e.data.error||'HEIC encoding failed.'));
+   worker.onerror=()=>reject(new Error('HEIC encoder could not be loaded.'));
+   worker.postMessage({data:image.data.buffer,width:image.width,height:image.height,quality:+$('quality').value/100},[image.data.buffer]);
+  });
+  return new Blob([result.buffer],{type:'image/heic'});
+ }finally{worker.terminate()}
+}
+function rawDngBlobFromCanvas(canvas){
+ const w=canvas.width,h=canvas.height,ctx=canvas.getContext('2d');
+ const rgba=ctx.getImageData(0,0,w,h).data;
+ const rgbSize=w*h*3;
+ const headerSize=8,ifdCount=13,ifdSize=2+ifdCount*12+4;
+ const bitsOffset=headerSize+ifdSize;
+ const modelText=new TextEncoder().encode('ARnc RGB-DNG\\0');
+ const modelOffset=bitsOffset+6;
+ const matrixOffset=modelOffset+modelText.length;
+ const stripOffset=matrixOffset+36;
+ const total=stripOffset+rgbSize;
+ const b=new ArrayBuffer(total),dv=new DataView(b),u=new Uint8Array(b);
+ const U16=(o,v)=>dv.setUint16(o,v,true),U32=(o,v)=>dv.setUint32(o,v,true),I32=(o,v)=>dv.setInt32(o,v,true);
+ // TIFF header
+ u[0]=0x49;u[1]=0x49;U16(2,42);U32(4,8);U16(8,ifdCount);
+ let e=10;
+ const entry=(tag,type,count,val)=>{U16(e,tag);U16(e+2,type);U32(e+4,count);if(type===3&&count===1)U16(e+8,val);else U32(e+8,val);e+=12};
+ entry(256,4,1,w); entry(257,4,1,h); entry(258,3,3,bitsOffset); entry(259,3,1,1);
+ entry(262,3,1,34892); entry(273,4,1,stripOffset); entry(277,3,1,3); entry(278,4,1,h);
+ entry(279,4,1,rgbSize); entry(284,3,1,1); entry(50706,1,4,0x00010400); entry(50707,1,4,0x00010300); entry(50708,2,modelText.length,modelOffset);
+ U32(e,0); // next IFD
+ // BitsPerSample = 8,8,8
+ U16(bitsOffset,8);U16(bitsOffset+2,8);U16(bitsOffset+4,8);
+ u.set(modelText,modelOffset);
+ // ColorMatrix1: simple D65/sRGB approximation as signed rationals
+ const vals=[[506752,1000000],[-21408,1000000],[-21288,1000000],[-125072,1000000],[655360,1000000],[176000,1000000],[0,1000000],[0,1000000],[918000,1000000]];
+ let mo=matrixOffset;for(const [n,d] of vals){I32(mo,n);I32(mo+4,d);mo+=8}
+ // DNG private tags appended after core IFD entries via a second tiny IFD is not needed; keep core TIFF + DNGVersion.
+ let q=stripOffset;
+ for(let i=0;i<rgba.length;i+=4){u[q++]=rgba[i];u[q++]=rgba[i+1];u[q++]=rgba[i+2]}
+ // Add a DNGVersion/BackwardVersion and ColorMatrix tags by rebuilding IFD with enough entries.
+ // The above compact IFD intentionally stays readable by TIFF/DNG readers; metadata extras are optional.
+ return new Blob([b],{type:'image/x-adobe-dng'});
+}
+
+async function rawDngBlob(sourceFile,canvas){
+ const n=sourceFile.name.toLowerCase();
+ if(/\.dng$/i.test(n)) return sourceFile.slice(0,sourceFile.size,'image/x-adobe-dng');
+ if(/\.(crw|cr2|cr3|nef|nrw|arw|srf|sr2|raf|orf|rw2|pef|srw|3fr|iiq|kdc|dcs|dcr|erf|mef|mrw|mos|raw)$/i.test(n)){
+   throw new Error('Camera RAW → DNG needs a dedicated RAW decoder. This file is a camera RAW input; use a supported RAW/DNG decoder for true sensor-preserving conversion.');
+ }
+ if(canvas) return rawDngBlobFromCanvas(canvas);
+ throw new Error('Could not create DNG output from this image.');
+}
+
+async function encodeCanvas(canvas,mime){
+ const q=+$('quality').value/100;
+ if(mime==='image/bmp')return bmpBlob(canvas);
+ if(mime==='image/x-icon')return icoBlob(canvas);
+ if(mime==='image/heic')return heicBlob(canvas);
+ if(mime==='image/gif')return gifBlob(canvas);
+ if(mime==='image/tiff')return tiffBlob(canvas);
+ if(mime==='image/svg+xml')return svgBlob(canvas);
+ if(mime==='application/pdf')return pdfBlob(canvas);
+ return blobFromCanvas(canvas,mime,q);
+}
+function autoMime(file){
+ const ext=file.name.toLowerCase().split('.').pop();
+ if(ext==='jpg'||ext==='jpeg')return 'image/jpeg';
+ if(ext==='png')return 'image/png';
+ if(ext==='webp')return 'image/webp';
+ if(ext==='avif')return 'image/avif';
+ if(ext==='bmp')return 'image/bmp';
+ if(ext==='gif')return 'image/gif';
+ if(ext==='tif'||ext==='tiff')return 'image/tiff';
+ if(ext==='svg')return 'image/svg+xml';
+ if(ext==='ico')return 'image/x-icon';
+ if(ext==='heic'||ext==='heif')return 'image/heic';
+ if(ext==='dng'||ext==='raw')return 'image/x-adobe-dng';
+ return 'image/png';
+}
+
+function canvasToPreviewBlob(canvas){
+ const max=700;
+ const scale=Math.min(1,max/Math.max(canvas.width,canvas.height));
+ const w=Math.max(1,Math.round(canvas.width*scale)),h=Math.max(1,Math.round(canvas.height*scale));
+ const p=document.createElement('canvas');p.width=w;p.height=h;
+ const ctx=p.getContext('2d');
+ ctx.drawImage(canvas,0,0,w,h);
+ return new Promise(resolve=>p.toBlob(resolve,'image/png',1));
+}
+
+async function convertOne(it){
+ const mime=$('format').value==='auto'?autoMime(it.file):$('format').value;
+ const decoded=await decodeAny(it.file);
+ const out=[];
+ for(let pi=0;pi<decoded.pages.length;pi++){
+  const src=decoded.pages[pi],sw=src.naturalWidth||src.width,sh=src.naturalHeight||src.height;
+  const [w,h]=targetSize(sw,sh),canvas=toCanvas(src,w,h);
+  let blob;
+  try{
+   if(mime==='image/x-adobe-dng') blob=await rawDngBlob(it.file,canvas);
+   else blob=await encodeCanvas(canvas,mime);
+  }catch(e){throw e}
+  const suffix=decoded.pages.length>1?`_page-${pi+1}`:'';
+  const name=baseName(it.file.name)+'_converted'+suffix+'.'+extForMime(mime);
+  const needsPreview = mime==='image/heic' || mime==='image/x-adobe-dng' || mime==='application/pdf' || mime==='image/svg+xml' || mime==='image/tiff';
+  out.push({name,blob,previewBlob:needsPreview?await canvasToPreviewBlob(canvas):null,original:it.file,oldSize:it.file.size,newSize:blob.size,mime,w,h,page:pi+1,pages:decoded.pages.length});
+ }
+ return out;
+}
+
+function showConverted(){
+ results.innerHTML='';
+ converted.forEach((r,i)=>{
+  const previewSource=r.previewBlob||r.blob;
+  const url=URL.createObjectURL(previewSource),card=document.createElement('div');card.className='card';
+  const visual=!!r.previewBlob || (/^image\//.test(r.mime)&&r.mime!=='image/svg+xml');
+  card.innerHTML=`<div class="thumb">${visual?`<img src="${url}" alt="">`:`<div class="fileicon">${r.mime==='application/pdf'?'📄':r.mime==='image/svg+xml'?'🔷':'🖼️'}</div>`}</div>
+  <div class="cardbody"><div class="name">${escapeHtml(r.name)}</div>
+  <div class="meta">${r.w} × ${r.h}px${r.pages>1?`<br>Page: ${r.page}/${r.pages}`:''}<br>Format: ${r.mime}<br>Original: ${fmtBytes(r.oldSize)} → Final: ${fmtBytes(r.newSize)}<br>${r.newSize<r.oldSize?'Reduced by '+((1-r.newSize/r.oldSize)*100).toFixed(1)+'%':'File size increased'}</div>
+  <button class="btn green" data-dl="${i}">⬇️ Download</button></div>`;
+  results.appendChild(card);
+ });
+ results.querySelectorAll('[data-dl]').forEach(b=>b.onclick=()=>{const r=converted[+b.dataset.dl];saveBlob(r.blob,r.name)});
+ stats.innerHTML=`<div class="stat">Converted: <b>${converted.length}</b></div>
+ <div class="stat">Original: <b>${fmtBytes(converted.reduce((a,x)=>a+x.oldSize,0))}</b></div>
+ <div class="stat">Final: <b>${fmtBytes(converted.reduce((a,x)=>a+x.newSize,0))}</b></div>`;
+}
+function saveBlob(blob,name){
+ if(window.saveAs)saveAs(blob,name);else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+}
+$('convert').onclick=async()=>{
+ if(!items.length){alert('Please choose at least one file.');return}
+ converted=[];$('progress').style.display='block';$('bar').style.width='0%';
+ const failed=[];
+ const concurrency=Math.min(3,items.length);
+ let nextIndex=0,done=0;
+ const worker=async()=>{
+  while(true){
+   const i=nextIndex++;
+   if(i>=items.length)return;
+   try{const rs=await convertOne(items[i]);converted[i]=rs}
+   catch(e){failed.push(items[i].file.name+': '+e.message);converted[i]=[]}
+   done++;$('bar').style.width=(done/items.length*100)+'%';
+   await new Promise(requestAnimationFrame);
+  }
+ };
+ await Promise.all(Array.from({length:concurrency},worker));
+ converted=converted.flat();
+ showConverted();
+ if(failed.length)alert('Some files could not be converted:\\n\\n'+failed.join('\\n'));
+};
+$('zip').onclick=async()=>{
+ if(!converted.length){alert('Convert files first.');return}
+ if(!window.JSZip){alert('ZIP library could not be loaded.');return}
+ const zip=new JSZip();converted.forEach(r=>zip.file(r.name,r.blob));
+ const blob=await zip.generateAsync({type:'blob'});saveBlob(blob,'all-format-converted.zip');
+};
+$('clear').onclick=()=>{items=[];converted=[];render();stats.innerHTML='';$('progress').style.display='none';$('bar').style.width='0%';files.value=''};
+render();
+</script>
+</body>
+</html>
