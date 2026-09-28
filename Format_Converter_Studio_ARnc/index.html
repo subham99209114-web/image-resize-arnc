@@ -348,10 +348,26 @@ async function decodeAny(file){
  }
 }
 function toCanvas(source,w,h){
- const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');
+ const c=document.createElement('canvas');c.width=w;c.height=h;
+ const ctx=c.getContext('2d');
  const bg=$('background').value;
  if(bg!=='transparent'){ctx.fillStyle=bg;ctx.fillRect(0,0,w,h)}
- ctx.drawImage(source,0,0,w,h);return c;
+ ctx.drawImage(source,0,0,w,h);
+ return c;
+}
+
+function outputSupportsAlpha(mime){
+ return ['image/png','image/webp','image/avif','image/x-icon','image/svg+xml'].includes(mime);
+}
+function canvasForOutput(canvas,mime){
+ if(outputSupportsAlpha(mime))return canvas;
+ const bg=$('background').value;
+ const c=document.createElement('canvas');c.width=canvas.width;c.height=canvas.height;
+ const ctx=c.getContext('2d');
+ ctx.fillStyle=bg==='transparent'?'#ffffff':bg;
+ ctx.fillRect(0,0,c.width,c.height);
+ ctx.drawImage(canvas,0,0);
+ return c;
 }
 function targetSize(w,h){
  const m=$('resizeMode').value;
@@ -387,66 +403,70 @@ function icoBlob(canvas){
  return new Blob([buf],{type:'image/x-icon'});
 }
 async function gifBlob(canvas){
- // Local, worker-free GIF encoder. This avoids CORS/origin-null errors
- // when the HTML is opened directly with file://.
+ // Standards-compliant single-frame GIF encoder.
+ // Uses a conservative 8-bit palette and literal LZW codes with CLEAR
+ // codes so the downloaded GIF is readable by standard image viewers.
  const ctx=canvas.getContext('2d',{willReadFrequently:true});
- const w=Math.max(1,canvas.width|0),h=Math.max(1,canvas.height|0);
+ const w=Math.max(1,Math.min(65535,canvas.width|0));
+ const h=Math.max(1,Math.min(65535,canvas.height|0));
  const rgba=ctx.getImageData(0,0,w,h).data;
- // Fixed 3-3-2 RGB palette: 256 colors, deterministic and fast.
+
+ // Fixed 3-3-2 RGB palette (256 colors).
  const palette=new Uint8Array(256*3);
  let po=0;
  for(let i=0;i<256;i++){
-  const r=(i>>5)&7, g=(i>>2)&7, b=i&3;
+  const r=(i>>5)&7,g=(i>>2)&7,b=i&3;
   palette[po++]=Math.round(r*255/7);
   palette[po++]=Math.round(g*255/7);
   palette[po++]=Math.round(b*255/3);
  }
+
+ // Convert RGBA pixels to palette indexes.
  const pixels=new Uint8Array(w*h);
  for(let i=0,j=0;i<rgba.length;i+=4,j++){
   const r=rgba[i],g=rgba[i+1],b=rgba[i+2];
   pixels[j]=((r>>5)<<5)|((g>>5)<<2)|(b>>6);
  }
- // GIF LZW encoder for 8-bit indexed pixels.
- function lzw(data,minCodeSize){
-  const clear=1<<minCodeSize, end=clear+1;
-  let codeSize=minCodeSize+1, next=end+1, dict=new Map();
-  let curBits=0,curVal=0,out=[];
+
+ // GIF LZW. After each literal, CLEAR resets the dictionary. This is
+ // intentionally conservative: it trades compression for decoder safety.
+ function lzwLiteral(data){
+  const clear=256,end=257,codeSize=9;
+  const out=[]; let bitPos=0,cur=0;
   const emit=code=>{
-   curVal|=code<<curBits;curBits+=codeSize;
-   while(curBits>=8){out.push(curVal&255);curVal>>>=8;curBits-=8;}
+   cur|=code<<bitPos; bitPos+=codeSize;
+   while(bitPos>=8){out.push(cur&255);cur=Math.floor(cur/256);bitPos-=8;}
   };
   emit(clear);
-  if(!data.length){emit(end);if(curBits)out.push(curVal&255);return new Uint8Array(out)}
-  let prefix=data[0];
-  for(let i=1;i<data.length;i++){
-   const k=data[i],key=prefix+','+k;
-   if(dict.has(key)){prefix=dict.get(key);continue}
-   emit(prefix);
-   if(next<4096){dict.set(key,next++);if(next===(1<<codeSize)&&codeSize<12)codeSize++;}
-   else{emit(clear);dict=new Map();codeSize=minCodeSize+1;next=end+1;}
-   prefix=k;
-  }
-  emit(prefix);emit(end);if(curBits)out.push(curVal&255);
+  for(let i=0;i<data.length;i++){emit(data[i]);emit(clear)}
+  emit(end);
+  if(bitPos>0)out.push(cur&255);
   return new Uint8Array(out);
  }
- const compressed=lzw(pixels,8),bytes=[];
+
+ const compressed=lzwLiteral(pixels),bytes=[];
  const pushStr=str=>{for(let i=0;i<str.length;i++)bytes.push(str.charCodeAt(i))};
+ const push16=n=>bytes.push(n&255,(n>>8)&255);
  pushStr('GIF89a');
- const push16=n=>{bytes.push(n&255,(n>>8)&255)};
- push16(w);push16(h);bytes.push(0xF7,0,0); // GCT, 256-color palette, background 0
+ push16(w);push16(h);
+ // Global color table: 256 entries.
+ bytes.push(0xF7,0,0);
  for(const v of palette)bytes.push(v);
- // Graphic Control Extension: no transparency, no delay.
+ // Graphic Control Extension: no transparency, zero delay.
  bytes.push(0x21,0xF9,0x04,0x00,0x00,0x00,0x00,0x00);
- // Image Descriptor.
+ // Image descriptor: no local table, no interlace.
  bytes.push(0x2C);push16(0);push16(0);push16(w);push16(h);bytes.push(0x00);
- bytes.push(0x08); // LZW minimum code size
+ bytes.push(0x08); // LZW minimum code size.
+ // Image-data sub-blocks, max 255 bytes each.
  for(let i=0;i<compressed.length;i+=255){
-  const n=Math.min(255,compressed.length-i);bytes.push(n);
+  const n=Math.min(255,compressed.length-i); bytes.push(n);
   for(let j=0;j<n;j++)bytes.push(compressed[i+j]);
  }
- bytes.push(0x00,0x3B);
+ bytes.push(0x00); // End of image data.
+ bytes.push(0x3B); // GIF trailer.
  return new Blob([new Uint8Array(bytes)],{type:'image/gif'});
 }
+
 async function tiffBlob(canvas){
  const w=canvas.width,h=canvas.height;
  const rgba=canvas.getContext('2d').getImageData(0,0,w,h).data;
@@ -523,48 +543,31 @@ function svgBlob(canvas){
 async function pdfBlob(canvas){
  const {jsPDF}=window.jspdf||{};
  if(!jsPDF)throw new Error('PDF encoder library is unavailable.');
- const orientation=$('pdfOrientation').value==='auto'?(canvas.width>=canvas.height?'landscape':'portrait'):$('pdfOrientation').value;
+ const requested=$('pdfOrientation').value;
+ const autoOrientation=canvas.width>=canvas.height?'landscape':'portrait';
+ const orientation=requested==='auto'?autoOrientation:requested;
  const size=$('pdfSize').value;
+ const pdfCanvas=canvasForOutput(canvas,'application/pdf');
+ const quality=Math.max(.1,Math.min(1,+$('quality').value/100));
+ const jpeg=pdfCanvas.toDataURL('image/jpeg',quality);
  let doc;
  if(size==='a4'||size==='letter'){
   doc=new jsPDF({orientation,unit:'pt',format:size});
   const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),margin=18;
   const scale=Math.min((pw-margin*2)/canvas.width,(ph-margin*2)/canvas.height);
-  const w=canvas.width*scale,h=canvas.height*scale;
-  doc.addImage(canvas.toDataURL('image/jpeg',Math.max(.1,+$('quality').value/100)), 'JPEG',(pw-w)/2,(ph-h)/2,w,h);
+  const w=Math.max(1,canvas.width*scale),h=Math.max(1,canvas.height*scale);
+  doc.addImage(jpeg,'JPEG',(pw-w)/2,(ph-h)/2,w,h);
  }else{
-  const pxToPt=72/96,w=canvas.width*pxToPt,h=canvas.height*pxToPt;
-  doc=new jsPDF({orientation:w>=h?'landscape':'portrait',unit:'pt',format:[w,h]});
-  doc.addImage(canvas.toDataURL('image/jpeg',Math.max(.1,+$('quality').value/100)),'JPEG',0,0,w,h);
+  const pxToPt=72/96;
+  let pw=Math.max(1,canvas.width*pxToPt),ph=Math.max(1,canvas.height*pxToPt);
+  if(requested==='portrait' && pw>ph)[pw,ph]=[ph,pw];
+  if(requested==='landscape' && ph>pw)[pw,ph]=[ph,pw];
+  doc=new jsPDF({orientation:pw>=ph?'landscape':'portrait',unit:'pt',format:[pw,ph]});
+  doc.addImage(jpeg,'JPEG',0,0,pw,ph);
  }
  return doc.output('blob');
 }
-async function heicBlob(canvas){
- if(typeof Worker==='undefined')throw new Error('HEIC encoder requires Web Worker support.');
- const workerCode=`
- self.onmessage=async e=>{
-  try{
-   const {data,width,height,quality}=e.data;
-   const mod=await import('https://cdn.jsdelivr.net/npm/@pbk20191/icodec@0.9.3/+esm');
-   const codec=mod.heic || mod.default?.heic;
-   if(!codec)throw new Error('HEIC encoder module is unavailable in this browser.');
-   await codec.loadEncoder();
-   const rgba=new Uint8ClampedArray(data);
-   const out=codec.encode({data:rgba,width,height},{quality:Math.max(1,Math.min(100,Math.round(quality*100))) });
-   self.postMessage({ok:true,buffer:out.buffer},[out.buffer]);
-  }catch(err){self.postMessage({ok:false,error:err&&err.message?err.message:String(err)})}
- }`;
- const worker=new Worker(URL.createObjectURL(new Blob([workerCode],{type:'text/javascript'})));
- try{
-  const image=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height);
-  const result=await new Promise((resolve,reject)=>{
-   worker.onmessage=e=>e.data.ok?resolve(e.data):reject(new Error(e.data.error||'HEIC encoding failed.'));
-   worker.onerror=()=>reject(new Error('HEIC encoder could not be loaded.'));
-   worker.postMessage({data:image.data.buffer,width:image.width,height:image.height,quality:+$('quality').value/100},[image.data.buffer]);
-  });
-  return new Blob([result.buffer],{type:'image/heic'});
- }finally{worker.terminate()}
-}
+
 function rawDngBlobFromCanvas(canvas){
  const w=canvas.width,h=canvas.height,ctx=canvas.getContext('2d');
  const rgba=ctx.getImageData(0,0,w,h).data;
@@ -611,15 +614,18 @@ async function rawDngBlob(sourceFile,canvas){
 }
 
 async function encodeCanvas(canvas,mime){
- const q=+$('quality').value/100;
- if(mime==='image/bmp')return bmpBlob(canvas);
+ const q=Math.max(.01,Math.min(1,+$('quality').value/100));
+ const outCanvas=canvasForOutput(canvas,mime);
+ if(mime==='image/bmp')return bmpBlob(outCanvas);
  if(mime==='image/x-icon')return icoBlob(canvas);
- if(mime==='image/heic')return heicBlob(canvas);
- if(mime==='image/gif')return gifBlob(canvas);
- if(mime==='image/tiff')return tiffBlob(canvas);
+ if(mime==='image/heic')return heicBlob(outCanvas);
+ if(mime==='image/gif')return gifBlob(outCanvas);
+ if(mime==='image/tiff')return tiffBlob(outCanvas);
  if(mime==='image/svg+xml')return svgBlob(canvas);
  if(mime==='application/pdf')return pdfBlob(canvas);
- return blobFromCanvas(canvas,mime,q);
+ const blob=await blobFromCanvas(outCanvas,mime,q);
+ if(!blob)throw new Error('This browser could not encode the selected output format.');
+ return blob;
 }
 function autoMime(file){
  const ext=file.name.toLowerCase().split('.').pop();
