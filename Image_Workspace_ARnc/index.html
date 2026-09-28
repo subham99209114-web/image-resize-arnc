@@ -95,6 +95,18 @@ body.theme-light input[type=text],body.theme-light input[type=number],body.theme
   .thumb-list{max-height:260px}
 }
 @media(max-width:430px){.toolnav{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}.canvas-stage{min-height:300px}.empty{padding:24px 14px}.btn{padding:8px 9px}}
+
+/* ===== ARnc Remini-style Smart Clean ADD-ON — local/browser only ===== */
+.cleanPanel{display:none}.cleanPanel.active{display:block}.cleanHero{background:linear-gradient(135deg,rgba(56,211,159,.16),rgba(90,169,255,.12));border:1px solid rgba(90,169,255,.35)}
+.cleanBadge{display:inline-block;background:linear-gradient(135deg,#20c997,#3ca7ff);color:#031018;font-weight:900;padding:4px 8px;border-radius:999px;font-size:10px;margin-left:5px}
+.cleanGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cleanGrid3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.cleanActions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cleanActions .btn{margin:0}.cleanProgress{height:9px;background:#081321;border-radius:999px;overflow:hidden;margin-top:9px;display:none}.cleanProgress>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#20c997,#5aa9ff);transition:width .15s}.cleanResult{font-size:11px;color:var(--muted);line-height:1.55;margin-top:8px}.cleanToggle{display:flex;gap:7px;align-items:center;font-size:11px;color:#cbd7e6;margin-top:8px}.cleanToggle input{width:auto}.cleanPreview{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}.cleanPreview canvas{width:100%;height:115px;object-fit:contain;background:#fff;border-radius:7px}.cleanMini{font-size:10px;color:var(--muted);text-align:center;margin-top:4px}.cleanNote{padding:8px;border-radius:8px;background:rgba(90,169,255,.08);font-size:10px;color:#b8d4ed;line-height:1.45;margin-top:8px}
+@media(max-width:720px){.cleanGrid3{grid-template-columns:1fr 1fr}.cleanPreview{grid-template-columns:1fr}}
+@media(max-width:430px){.cleanGrid,.cleanGrid3,.cleanActions{grid-template-columns:1fr}}
+
+/* ===== Screenshot-inspired Remini AI Toolbar add-on ===== */
+.cleanToolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cleanToolBtn{position:relative;text-align:left;min-height:54px;padding:9px 10px}.cleanToolBtn b{display:block;font-size:12px}.cleanToolBtn small{display:block;color:var(--muted);font-size:9px;margin-top:2px}.cleanToolBtn.active{outline:2px solid rgba(90,169,255,.65);background:linear-gradient(135deg,rgba(90,169,255,.18),rgba(32,201,151,.12))}.cleanToolDot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;background:#20c997}.cleanCompare{position:relative;width:100%;height:250px;border-radius:10px;overflow:hidden;background:#050b12;border:1px solid var(--line);touch-action:none}.cleanCompare canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.cleanCompare .cleanAfterLayer{position:absolute;top:0;bottom:0;left:50%;width:50%;overflow:hidden;border-left:2px solid #fff;box-shadow:-4px 0 12px rgba(0,0,0,.25)}.cleanCompare .cleanAfterLayer canvas{position:absolute;left:-100%;top:0;width:200%;height:100%;object-fit:contain;object-position:left center;max-width:none}.cleanCompareLabels{position:absolute;top:9px;left:9px;right:9px;display:flex;justify-content:space-between;pointer-events:none}.cleanCompareLabels span{background:rgba(0,0,0,.58);color:#fff;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:800}.cleanCompareHandle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:#fff;color:#182536;display:flex;align-items:center;justify-content:center;font-weight:900;box-shadow:0 4px 16px rgba(0,0,0,.35);pointer-events:none}.cleanCompareRange{width:100%;margin-top:8px}.cleanToolInfo{font-size:10px;color:var(--muted);line-height:1.45;margin-top:7px}.cleanApplyRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.cleanStrength{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cleanStrength label{margin:0}.cleanTag{font-size:9px;background:rgba(255,255,255,.08);border:1px solid var(--line);padding:3px 6px;border-radius:999px;color:var(--muted)}
+@media(max-width:720px){.cleanCompare{height:210px}}
+@media(max-width:430px){.cleanToolbar,.cleanApplyRow,.cleanStrength{grid-template-columns:1fr}.cleanCompare{height:190px}}
 </style>
 </head>
 <body>
@@ -114,7 +126,7 @@ body.theme-light input[type=text],body.theme-light input[type=number],body.theme
 <aside class="sidebar">
   <div class="section-title">Workspace</div>
   <div class="toolnav">
-    <button class="active" data-panel="editor">🎨 Editor</button>
+    <button class="active" data-panel="editor">🎨 Editor</button><button data-panel="clean">🪄 Smart Clean <span class="cleanBadge">PRO</span></button>
     <button data-panel="adjust">☀️ Adjustments</button>
     <button data-panel="filters">✨ Filters</button>
     <button data-panel="crop">✂️ Crop & Transform</button>
@@ -166,6 +178,69 @@ body.theme-light input[type=text],body.theme-light input[type=number],body.theme
       </div>
       <label class="check"><input id="lockRatio" type="checkbox" checked> Keep aspect ratio</label>
       <button class="btn primary" id="resizeBtn">Apply Resize</button>
+    </div>
+    <div class="card"><h3>Advanced Resize</h3>
+      <div class="grid2">
+        <label class="field"><span>Percent</span><input id="resizePercent" type="number" min="1" max="1000" value="100"></label>
+        <button class="btn small" id="applyPercentResize">Apply %</button>
+      </div>
+      <div class="grid2">
+        <label class="field"><span>Target MP</span><input id="resizeMP" type="number" min="0.05" max="100" step="0.05" value="2"></label>
+        <button class="btn small" id="applyMPResize">Resize to MP</button>
+      </div>
+      <div class="grid2">
+        <label class="field"><span>Max Width</span><input id="maxResizeW" type="number" min="1" value="1920"></label>
+        <label class="field"><span>Max Height</span><input id="maxResizeH" type="number" min="1" value="1080"></label>
+      </div>
+      <button class="btn small" id="fitMaxResize">Fit Inside Max Size</button>
+      <div class="grid2">
+        <label class="field"><span>Long Edge</span><input id="longEdgeResize" type="number" min="1" value="2048"></label>
+        <button class="btn small" id="applyLongEdgeResize">Set Long Edge</button>
+      </div>
+      <div class="grid2">
+        <label class="field"><span>Resampling</span><select id="resizeQuality"><option value="high" selected>High Quality</option><option value="medium">Balanced</option><option value="low">Fast</option></select></label>
+        <button class="btn small" id="smartResizeBtn">⚡ Smart Resize</button>
+      </div>
+      <div class="row"><button class="btn small" id="upscale2xBtn">2× Upscale</button><button class="btn small" id="downscale50Btn">50% Downscale</button></div>
+    </div>
+    <div class="card"><h3>Resize Modes</h3>
+      <label class="field"><span>Mode</span><select id="resizeMode">
+        <option value="width">By Width</option>
+        <option value="height">By Height</option>
+        <option value="percent">By Percentage</option>
+        <option value="longest">Longest Side</option>
+        <option value="shortest">Shortest Side</option>
+        <option value="fit">Fit Inside Box</option>
+        <option value="fill">Fill Box + Crop</option>
+        <option value="stretch">Exact / Stretch</option>
+      </select></label>
+      <div class="grid2">
+        <label class="field"><span>Target Width</span><input id="modeResizeW" type="number" min="1" value="1280"></label>
+        <label class="field"><span>Target Height</span><input id="modeResizeH" type="number" min="1" value="720"></label>
+      </div>
+      <label class="field"><span>Scale % <b id="modeResizePercentV">100%</b></span><input id="modeResizePercent" type="range" min="1" max="400" value="100"></label>
+      <label class="check"><input id="noUpscaleResize" type="checkbox"> Do not upscale beyond original size</label>
+      <div class="row"><button class="btn primary" id="applyResizeMode">Apply Resize Mode</button><button class="btn small" id="resetResizeMode">Use Original Size</button></div>
+      <p class="muted">Fit keeps the complete image. Fill covers the target box and crops the overflow. Stretch forces exact dimensions.</p>
+    </div>
+    <div class="card"><h3>Resize Output</h3>
+      <div class="grid2">
+        <label class="field"><span>Format</span><select id="resizeOutputFormat"><option value="image/jpeg">JPG / JPEG</option><option value="image/png">PNG</option><option value="image/webp">WEBP</option></select></label>
+        <label class="field"><span>Quality</span><input id="resizeOutputQuality" type="number" min="10" max="100" value="92"></label>
+      </div>
+      <button class="btn small" id="applyResizeOutput">Link to Export Settings</button>
+      <p class="muted">This links resize export format and quality to the existing Professional Export controls.</p>
+    </div>
+    <div class="card"><h3>Print Size</h3>
+      <div class="grid2">
+        <label class="field"><span>Width</span><input id="printW" type="number" min="0.01" step="0.01" value="6"></label>
+        <label class="field"><span>Height</span><input id="printH" type="number" min="0.01" step="0.01" value="4"></label>
+      </div>
+      <div class="grid2">
+        <label class="field"><span>Unit</span><select id="printUnit"><option value="in" selected>Inch</option><option value="cm">CM</option></select></label>
+        <label class="field"><span>DPI</span><select id="printDpi"><option>72</option><option selected>150</option><option>200</option><option>300</option><option>600</option></select></label>
+      </div>
+      <button class="btn primary" id="applyPrintResize">Resize for Print</button>
     </div>
     <div class="card"><h3>Smart presets</h3>
       <div class="grid2">
@@ -258,6 +333,77 @@ body.theme-light input[type=text],body.theme-light input[type=number],body.theme
         <button class="btn small themeBtn" data-theme="sunset">🌅 Sunset</button>
       </div>
       <div class="notice" style="margin-top:9px">Theme changes only the visual color scheme. Existing editor tools, image data and layout remain unchanged.</div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-clean">
+    <div class="card cleanHero"><h3>🪄 Remini-style Smart Clean <span class="cleanBadge">LOCAL</span></h3>
+      <div class="muted">One-click browser enhancement for blur/noise/low-light images. No backend or image upload is required.</div>
+      <div class="cleanActions" style="margin-top:10px">
+        <button class="btn primary" id="smartCleanBtn">✨ Smart Clean</button>
+        <button class="btn" id="cleanRestoreBtn">↩ Restore Original</button>
+      </div>
+      <div class="cleanProgress" id="cleanProgress"><i id="cleanProgressBar"></i></div>
+      <div class="cleanResult" id="cleanStatus">Upload an image and press Smart Clean.</div>
+    </div>
+    <div class="card"><h3>🧰 AI Toolbar <span class="cleanTag">Screenshot-style tools</span></h3>
+      <div class="cleanToolbar">
+        <button class="btn cleanToolBtn" id="cleanFaceBtn"><b>👤 Face Enhance</b><small>Detail recovery for the main subject area</small></button>
+        <button class="btn cleanToolBtn" id="cleanBgEnhanceBtn"><b>🏞️ Background Enhance</b><small>Improve surrounding tones and clarity</small></button>
+        <button class="btn cleanToolBtn" id="cleanBgBlurBtn"><b>🌫️ Background Blur</b><small>Soft portrait-style background separation</small></button>
+        <button class="btn cleanToolBtn" id="cleanColorBtn"><b>🎨 Color Correction</b><small>Auto exposure, contrast and color balance</small></button>
+      </div>
+      <div class="cleanToolInfo">These controls run locally in your browser. Face/background separation is an image-processing approximation unless your browser provides a compatible face/segmentation model.</div>
+      <div class="cleanApplyRow"><button class="btn primary" id="cleanApplyToolsBtn">✓ Apply Selected Tools</button><button class="btn" id="cleanClearToolsBtn">Clear Tools</button></div>
+    </div>
+    <div class="card"><h3>🎚️ Clean Strength</h3>
+      <label class="field"><span>Denoise <b id="cleanDenoiseV">35</b></span><input id="cleanDenoise" type="range" min="0" max="100" value="35"></label>
+      <label class="field"><span>Detail / Sharpen <b id="cleanSharpV">45</b></span><input id="cleanSharp" type="range" min="0" max="100" value="45"></label>
+      <label class="field"><span>Clarity <b id="cleanClarityV">30</b></span><input id="cleanClarity" type="range" min="0" max="100" value="30"></label>
+      <label class="field"><span>Light Recovery <b id="cleanLightV">20</b></span><input id="cleanLight" type="range" min="0" max="100" value="20"></label>
+      <label class="cleanToggle"><input id="cleanAutoColor" type="checkbox" checked> Auto color / white-balance correction</label>
+      <label class="cleanToggle"><input id="cleanFaceSafe" type="checkbox" checked> Face-safe detail mode (conservative sharpening)</label>
+    </div>
+    <div class="card"><h3>🧠 Advanced Clean Controls <span class="cleanTag">Local</span></h3>
+      <label class="field"><span>Face Detail <b id="cleanFaceDetailV">45</b></span><input id="cleanFaceDetail" type="range" min="0" max="100" value="45"></label>
+      <label class="field"><span>Background Depth <b id="cleanBgDepthV">35</b></span><input id="cleanBgDepth" type="range" min="0" max="100" value="35"></label>
+      <label class="field"><span>Dehaze / Haze Removal <b id="cleanDehazeV">15</b></span><input id="cleanDehaze" type="range" min="0" max="100" value="15"></label>
+      <label class="field"><span>Texture Recovery <b id="cleanTextureV">25</b></span><input id="cleanTexture" type="range" min="0" max="100" value="25"></label>
+      <label class="field"><span>JPEG Artifact Cleanup <b id="cleanArtifactV">20</b></span><input id="cleanArtifact" type="range" min="0" max="100" value="20"></label>
+      <div class="cleanGrid" style="margin-top:8px">
+        <button class="btn small" id="cleanAutoOptimizeBtn">🪄 Auto Optimize</button>
+        <button class="btn small" id="cleanPreviewToolsBtn">👁️ Preview Selected</button>
+      </div>
+      <div class="cleanResult" id="cleanAdvancedStatus">These controls use local pixel processing and do not upload the image.</div>
+    </div>
+    <div class="card"><h3>⚡ One-click Presets</h3>
+      <div class="cleanGrid3">
+        <button class="btn small cleanPreset" data-mode="portrait">👤 Portrait</button>
+        <button class="btn small cleanPreset" data-mode="lowlight">🌙 Low Light</button>
+        <button class="btn small cleanPreset" data-mode="oldphoto">🖼️ Old Photo</button>
+        <button class="btn small cleanPreset" data-mode="document">📄 Document</button>
+        <button class="btn small cleanPreset" data-mode="color">🌈 Color Boost</button>
+        <button class="btn small cleanPreset" data-mode="sharp">🔎 Extra Detail</button>
+      </div>
+    </div>
+    <div class="card"><h3>🔬 Quality & Upscale</h3>
+      <div class="cleanGrid">
+        <button class="btn small" id="qualityScanBtn">🔎 Quality Scan</button>
+        <select id="cleanScale"><option value="1">Keep size</option><option value="2">2× Upscale</option><option value="4">4× Upscale</option></select>
+      </div>
+      <button class="btn small" id="cleanUpscaleBtn" style="margin-top:8px">⬆️ Upscale + Detail Recovery</button>
+      <div class="cleanResult" id="qualityScanResult">Quality scan will report resolution, brightness, contrast and estimated noise.</div>
+    </div>
+    <div class="card"><h3>🖼️ Before / After <span class="cleanTag">Drag slider</span></h3>
+      <div class="cleanCompare" id="cleanCompare">
+        <canvas id="cleanCompareBefore"></canvas>
+        <div class="cleanAfterLayer" id="cleanAfterLayer"><canvas id="cleanCompareAfter"></canvas></div>
+        <div class="cleanCompareLabels"><span>Before</span><span>After</span></div>
+        <div class="cleanCompareHandle" id="cleanCompareHandle">↔</div>
+      </div>
+      <input class="cleanCompareRange" id="cleanCompareRange" type="range" min="0" max="100" value="50" aria-label="Before and after comparison">
+      <div class="cleanPreview"><div><canvas id="cleanBeforeCanvas"></canvas><div class="cleanMini">Original</div></div><div><canvas id="cleanAfterCanvas"></canvas><div class="cleanMini">Cleaned</div></div></div>
+      <div class="cleanNote">This is a local “Remini-style” enhancement, not the proprietary Remini neural model. It improves the pixels available in the source image; it cannot reliably recreate missing facial or object details.</div>
     </div>
   </section>
   <section class="panel" id="panel-batch">
@@ -476,7 +622,7 @@ function resetImage(){
   const original=im.original||im.src;
   const img=new Image();img.onload=()=>{im.img=img;im.src=original;im.w=img.naturalWidth;im.h=img.naturalHeight;state.rotation=0;state.flipX=1;state.flipY=1;state.adjust={brightness:0,contrast:0,saturation:0,exposure:0,warmth:0,blur:0};state.filter='normal';state.hue=0;state.colorOpacity=100;state.sharpness=0;state.vignette=0;canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0);state.history=[];state.redo=[];syncControls();renderHistory();updateUI();toast('Image reset to original')};img.src=original;
 }
-function resizeImage(w,h){w=Math.max(1,Math.round(w));h=Math.max(1,Math.round(h));const temp=document.createElement('canvas');temp.width=w;temp.height=h;temp.getContext('2d').drawImage(canvas,0,0,w,h);canvas.width=w;canvas.height=h;ctx.drawImage(temp,0,0);syncImageFromCanvas();pushHistory('Resize')}
+function resizeImage(w,h){w=Math.max(1,Math.round(w));h=Math.max(1,Math.round(h));const temp=document.createElement('canvas');temp.width=w;temp.height=h;const tc=temp.getContext('2d');tc.imageSmoothingEnabled=true;tc.imageSmoothingQuality=$('resizeQuality')?$('resizeQuality').value:'high';tc.drawImage(canvas,0,0,w,h);canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(temp,0,0);syncImageFromCanvas();pushHistory('Resize '+w+'×'+h);updateUI()}
 function activatePanel(name){document.querySelectorAll('.toolnav button').forEach(b=>b.classList.toggle('active',b.dataset.panel===name));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+name))}
 document.querySelectorAll('.toolnav button').forEach(b=>b.onclick=()=>activatePanel(b.dataset.panel));
 $('openBtn').onclick=$('emptyOpen').onclick=()=>$('fileInput').click();
@@ -517,6 +663,36 @@ $('straightenL').onclick=()=>{state.rotation-=1;renderFromSource();commitCanvas(
 $('addTextCenter').onclick=()=>addText($('textValue').value,canvas.width/2,canvas.height/2,+$('textSize').value,$('textColor').value,+$('textOpacity').value/100);
 $('addWatermark').onclick=()=>addText($('textValue').value||'ResizeImage.ARnc',canvas.width/2,canvas.height-+$('textSize').value,+$('textSize').value,$('textColor').value,+$('textOpacity').value/100);
 document.querySelectorAll('.preset').forEach(b=>b.onclick=()=>{const [w,h]=b.dataset.size.split('x').map(Number);resizeImage(w,h)});
+function applyAdvancedResize(w,h,label){if(!active()){toast('Add an image first');return}if(!Number.isFinite(w)||!Number.isFinite(h)||w<1||h<1){toast('Enter valid resize values');return}resizeImage(w,h);$('wInput').value=Math.round(w);$('hInput').value=Math.round(h);status(label+' applied');toast(label+' applied')}
+$('applyPercentResize').onclick=()=>{const p=+$('resizePercent').value;if(p<=0){toast('Enter a valid percentage');return}applyAdvancedResize(canvas.width*p/100,canvas.height*p/100,p+'% resize')};
+$('applyMPResize').onclick=()=>{const mp=+$('resizeMP').value;if(mp<=0){toast('Enter a valid megapixel value');return}const ratio=canvas.width/canvas.height;const pixels=mp*1000000;applyAdvancedResize(Math.sqrt(pixels*ratio),Math.sqrt(pixels/ratio),'Megapixel resize')};
+$('fitMaxResize').onclick=()=>{const mw=+$('maxResizeW').value,mh=+$('maxResizeH').value;if(mw<=0||mh<=0){toast('Enter valid maximum dimensions');return}const scale=Math.min(mw/canvas.width,mh/canvas.height,1);applyAdvancedResize(canvas.width*scale,canvas.height*scale,'Fit inside max size')};
+$('applyLongEdgeResize').onclick=()=>{const edge=+$('longEdgeResize').value;if(edge<=0){toast('Enter a valid long edge');return}const scale=edge/Math.max(canvas.width,canvas.height);applyAdvancedResize(canvas.width*scale,canvas.height*scale,'Long edge resize')};
+$('smartResizeBtn').onclick=()=>{if(!active()){toast('Add an image first');return}const pixels=canvas.width*canvas.height;const targetMax=8000000;if(pixels>targetMax){const scale=Math.sqrt(targetMax/pixels);applyAdvancedResize(canvas.width*scale,canvas.height*scale,'Smart resize (downscale)')}else{toast('Smart resize: current image is already within the recommended size range')}};
+$('upscale2xBtn').onclick=()=>applyAdvancedResize(canvas.width*2,canvas.height*2,'2× upscale');
+$('downscale50Btn').onclick=()=>applyAdvancedResize(canvas.width*.5,canvas.height*.5,'50% downscale');
+$('applyPrintResize').onclick=()=>{let w=+$('printW').value,h=+$('printH').value,dpi=+$('printDpi').value;if($('printUnit').value==='cm'){w/=2.54;h/=2.54}if(w<=0||h<=0||dpi<=0){toast('Enter valid print size');return}applyAdvancedResize(w*dpi,h*dpi,'Print size resize')};
+function applyResizeMode(mode,w,h,noUpscale){
+  if(!active()){toast('Add an image first');return}
+  w=Math.max(1,Math.round(w)); h=Math.max(1,Math.round(h));
+  const ow=canvas.width,oh=canvas.height;
+  let tw=w,th=h;
+  if(mode==='width'){const sc=w/ow; if(noUpscale&&sc>1){tw=ow;th=oh}else th=oh*sc; resizeImage(tw,th)}
+  else if(mode==='height'){const sc=h/oh; if(noUpscale&&sc>1){tw=ow;th=oh}else tw=ow*sc; resizeImage(tw,th)}
+  else if(mode==='percent'){let sc=w/100; if(noUpscale&&sc>1)sc=1; resizeImage(ow*sc,oh*sc)}
+  else if(mode==='longest'){let sc=w/Math.max(ow,oh); if(noUpscale&&sc>1)sc=1; resizeImage(ow*sc,oh*sc)}
+  else if(mode==='shortest'){let sc=w/Math.min(ow,oh); if(noUpscale&&sc>1)sc=1; resizeImage(ow*sc,oh*sc)}
+  else if(mode==='fit'){let sc=Math.min(w/ow,h/oh); if(noUpscale&&sc>1)sc=1; resizeImage(ow*sc,oh*sc)}
+  else if(mode==='stretch'){if(noUpscale){w=Math.min(w,ow);h=Math.min(h,oh)} resizeImage(w,h)}
+  else if(mode==='fill'){let sc=Math.max(w/ow,h/oh); if(noUpscale&&sc>1)sc=1; const tw=Math.max(1,Math.round(ow*sc)),th=Math.max(1,Math.round(oh*sc)); const temp=document.createElement('canvas');temp.width=w;temp.height=h;const tc=temp.getContext('2d');tc.imageSmoothingEnabled=true;tc.imageSmoothingQuality=$('resizeQuality').value||'high';tc.drawImage(canvas,(w-tw)/2,(h-th)/2,tw,th);canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=true;ctx.drawImage(temp,0,0);syncImageFromCanvas();pushHistory('Fill box resize')}
+  $('wInput').value=canvas.width;$('hInput').value=canvas.height;updateUI();status('Resize mode applied');toast('Resize mode applied');
+}
+$('modeResizePercent').oninput=e=>$('modeResizePercentV').textContent=e.target.value+'%';
+$('applyResizeMode').onclick=()=>{const mode=$('resizeMode').value;const no=$('noUpscaleResize').checked;const w=+$('modeResizeW').value,h=+$('modeResizeH').value,p=+$('modeResizePercent').value;if(mode==='percent')applyResizeMode(mode,p,100,no);else if(['width','longest','shortest'].includes(mode))applyResizeMode(mode,w,h,no);else applyResizeMode(mode,w,h,no)};
+$('resetResizeMode').onclick=()=>{if(!active()){toast('Add an image first');return}const o=active().original;const im=new Image();im.onload=()=>{canvas.width=im.naturalWidth||im.width;canvas.height=im.naturalHeight||im.height;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(im,0,0);syncImageFromCanvas();pushHistory('Restore original dimensions');updateUI();toast('Original dimensions restored')};im.src=o};
+$('resizeOutputFormat').onchange=()=>{if($('exportFormat'))$('exportFormat').value=$('resizeOutputFormat').value};
+$('resizeOutputQuality').oninput=()=>{};
+$('applyResizeOutput').onclick=()=>{if($('exportFormat'))$('exportFormat').value=$('resizeOutputFormat').value;if($('quality')){$('quality').value=$('resizeOutputQuality').value;$('qualityV').textContent=$('resizeOutputQuality').value+'%'}toast('Resize output settings linked')};
 $('resizeBtn').onclick=()=>{let w=+$('wInput').value,h=+$('hInput').value;if($('lockRatio').checked){const ratio=canvas.width/canvas.height;if(document.activeElement===$('wInput'))h=Math.round(w/ratio);else w=Math.round(h*ratio);$('wInput').value=w;$('hInput').value=h}resizeImage(w,h)};
 $('wInput').oninput=()=>{if($('lockRatio').checked)$('hInput').value=Math.max(1,Math.round(+$('wInput').value*canvas.height/canvas.width))};
 $('hInput').oninput=()=>{if($('lockRatio').checked)$('wInput').value=Math.max(1,Math.round(+$('hInput').value*canvas.width/canvas.height))};
@@ -550,6 +726,68 @@ function applyTheme(theme,showToast=true){
 }
 document.querySelectorAll('.themeBtn').forEach(b=>b.onclick=()=>applyTheme(b.dataset.theme));
 try{const savedTheme=localStorage.getItem('resizeImageARncTheme');if(savedTheme)applyTheme(savedTheme,false)}catch(e){}
+
+/* ===== Remini-style Smart Clean local engine ===== */
+function cleanSetProgress(v,msg){const p=$('cleanProgress'),b=$('cleanProgressBar');if(p)p.style.display='block';if(b)b.style.width=Math.max(0,Math.min(100,v))+'%';if(msg)$('cleanStatus').textContent=msg;if(v>=100)setTimeout(()=>{if(p)p.style.display='none'},450)}
+function cleanCopyCanvas(src,w,h){const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(src,0,0,w,h);return c}
+function cleanBoxBlur(data,w,h,r){if(r<=0)return data;const out=new Uint8ClampedArray(data.length);const rad=Math.max(1,Math.min(2,Math.round(r)));for(let y=0;y<h;y++)for(let x=0;x<w;x++){let rr=0,gg=0,bb=0,aa=0,n=0;for(let yy=-rad;yy<=rad;yy++){const py=Math.max(0,Math.min(h-1,y+yy));for(let xx=-rad;xx<=rad;xx++){const px=Math.max(0,Math.min(w-1,x+xx));const i=(py*w+px)*4;rr+=data[i];gg+=data[i+1];bb+=data[i+2];aa+=data[i+3];n++}}const j=(y*w+x)*4;out[j]=rr/n;out[j+1]=gg/n;out[j+2]=bb/n;out[j+3]=aa/n}return out}
+function cleanProcessCanvas(srcCanvas,opts){
+  const w=srcCanvas.width,h=srcCanvas.height,c=document.createElement('canvas');c.width=w;c.height=h;
+  const cx=c.getContext('2d',{willReadFrequently:true});cx.drawImage(srcCanvas,0,0);
+  let im=cx.getImageData(0,0,w,h),d=im.data;
+  const original=new Uint8ClampedArray(d), den=(opts.denoise||0)/100, light=(opts.light||0)/100, clarity=(opts.clarity||0)/100;
+  if(den>0){const blur=cleanBoxBlur(original,w,h,den>.55?2:1);for(let i=0;i<d.length;i+=4){const k=den*.72;d[i]=original[i]*(1-k)+blur[i]*k;d[i+1]=original[i+1]*(1-k)+blur[i+1]*k;d[i+2]=original[i+2]*(1-k)+blur[i+2]*k}}
+  let sum=0,count=0;for(let i=0;i<d.length;i+=16){sum+=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];count++}
+  const avg=sum/count, exposure=(128-avg)/128*light*.42, dehaze=(opts.dehaze||0)/100, texture=(opts.texture||0)/100, artifact=(opts.artifact||0)/100;
+  for(let i=0;i<d.length;i+=4){let r=d[i],g=d[i+1],b=d[i+2];
+    if(light>0){r+=255*exposure;g+=255*exposure;b+=255*exposure}
+    if(opts.autoColor){const cast=(128-(r+g+b)/3)*.045*light;r+=cast;g+=cast*.55;b+=cast*.25}
+    if(clarity>0){const y=.2126*r+.7152*g+.0722*b,boost=(y-128)*clarity*.16;r+=boost;g+=boost;b+=boost}
+    if(dehaze>0){const y=.2126*r+.7152*g+.0722*b, lift=dehaze*(1-y/255)*12, con=1+dehaze*.20;r=(r-128)*con+128+lift;g=(g-128)*con+128+lift;b=(b-128)*con+128+lift}
+    if(texture>0){const y=.2126*r+.7152*g+.0722*b, t=(y-128)*texture*.08;r+=t;g+=t;b+=t}
+    if(opts.color){const y=.2126*r+.7152*g+.0722*b;r=y+(r-y)*(1+opts.color);g=y+(g-y)*(1+opts.color);b=y+(b-y)*(1+opts.color)}
+    d[i]=Math.max(0,Math.min(255,r));d[i+1]=Math.max(0,Math.min(255,g));d[i+2]=Math.max(0,Math.min(255,b));
+  }
+  cx.putImageData(im,0,0);
+  const sharp=Math.min(.95,(opts.sharp||0)/100*.85), protect=opts.faceSafe?Math.max(.2,1-(opts.faceDetail||45)/180):1;
+  if(sharp>0){const frame=cx.getImageData(0,0,w,h),src=frame.data,out=new Uint8ClampedArray(src);for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=(y*w+x)*4;for(let ch=0;ch<3;ch++){const edge=4*src[i+ch]-src[i-4+ch]-src[i+4+ch]-src[i-w*4+ch]-src[i+w*4+ch];let strength=sharp*.55;if(opts.faceSafe){const m=cleanRadialMask(x,y,w,h);strength*=m*protect+(1-m)}out[i+ch]=Math.max(0,Math.min(255,src[i+ch]+edge*strength*(1-artifact*.55)))}}frame.data.set(out);cx.putImageData(frame,0,0)}
+  return c;
+}
+function cleanCommitCanvas(result,label){if(!active())return;canvas.width=result.width;canvas.height=result.height;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(result,0,0);syncImageFromCanvas();pushHistory(label);updateUI();renderHistory();}
+function cleanRun(mode){if(!active()){toast('Add an image first');return}const base=cleanCopyCanvas(canvas,canvas.width,canvas.height);let o={denoise:+$('cleanDenoise').value,sharp:+$('cleanSharp').value,clarity:+$('cleanClarity').value,light:+$('cleanLight').value,autoColor:$('cleanAutoColor').checked,color:0,faceDetail:+$('cleanFaceDetail').value,faceSafe:$('cleanFaceSafe').checked,dehaze:+$('cleanDehaze').value,texture:+$('cleanTexture').value,artifact:+$('cleanArtifact').value};if(mode==='portrait'){o.denoise=28;o.sharp=38;o.clarity=24;o.light=14}else if(mode==='lowlight'){o.denoise=48;o.sharp=42;o.clarity=36;o.light=55}else if(mode==='oldphoto'){o.denoise=52;o.sharp=34;o.clarity=28;o.light=30;o.color=-.06}else if(mode==='document'){o.denoise=20;o.sharp=72;o.clarity=62;o.light=25;o.color=.08}else if(mode==='color'){o.denoise=18;o.sharp=32;o.clarity=38;o.light=12;o.color=.16}else if(mode==='sharp'){o.denoise=12;o.sharp=82;o.clarity=48;o.light=8}cleanSetProgress(15,'Analyzing image…');setTimeout(()=>{cleanSetProgress(45,'Reducing noise…');const out=cleanProcessCanvas(base,o);cleanSetProgress(80,'Recovering detail…');setTimeout(()=>{cleanCommitCanvas(out,'Smart Clean: '+(mode||'Custom'));const bc=$('cleanBeforeCanvas'),ac=$('cleanAfterCanvas');bc.width=Math.min(700,base.width);bc.height=Math.round(base.height*bc.width/base.width);bc.getContext('2d').drawImage(base,0,0,bc.width,bc.height);ac.width=Math.min(700,out.width);ac.height=Math.round(out.height*ac.width/out.width);ac.getContext('2d').drawImage(out,0,0,ac.width,ac.height);cleanShowCompare(base,out);cleanSetProgress(100,'Smart Clean complete — review the result before export.');toast('Smart Clean applied')},80)},60)}
+$('smartCleanBtn').onclick=()=>cleanRun('custom');$('cleanRestoreBtn').onclick=resetImage;document.querySelectorAll('.cleanPreset').forEach(b=>b.onclick=()=>cleanRun(b.dataset.mode));['cleanDenoise','cleanSharp','cleanClarity','cleanLight'].forEach(id=>{$(id).oninput=e=>$(id+'V').textContent=e.target.value});
+$('cleanUpscaleBtn').onclick=()=>{if(!active())return;const scale=+$('cleanScale').value;if(scale===1){cleanRun('sharp');return}const nw=Math.min(8192,Math.round(canvas.width*scale)),nh=Math.min(8192,Math.round(canvas.height*scale));cleanSetProgress(20,'Upscaling with high-quality browser resampling…');setTimeout(()=>{const t=document.createElement('canvas');t.width=nw;t.height=nh;const tc=t.getContext('2d');tc.imageSmoothingEnabled=true;tc.imageSmoothingQuality='high';tc.drawImage(canvas,0,0,nw,nh);const out=cleanProcessCanvas(t,{denoise:12,sharp:55,clarity:28,light:5,autoColor:true,color:.03});cleanCommitCanvas(out,'Upscale '+scale+'× + Detail Recovery');cleanSetProgress(100,'Upscale complete.');toast('Upscale '+scale+'× complete')},60)};
+// Screenshot-inspired AI Toolbar — local processing only
+let cleanToolState={face:false,bgEnhance:false,bgBlur:false,color:false};
+function cleanToolToggle(id,key){$(id).onclick=()=>{cleanToolState[key]=!cleanToolState[key];$(id).classList.toggle('active',cleanToolState[key]);toast($(id).querySelector('b').textContent+' '+(cleanToolState[key]?'enabled':'disabled'))}}
+cleanToolToggle('cleanFaceBtn','face');cleanToolToggle('cleanBgEnhanceBtn','bgEnhance');cleanToolToggle('cleanBgBlurBtn','bgBlur');cleanToolToggle('cleanColorBtn','color');
+function cleanRadialMask(x,y,w,h){const dx=(x-w*.5)/(w*.34),dy=(y-h*.43)/(h*.48);return Math.max(0,Math.min(1,1-(dx*dx+dy*dy)));}
+function cleanApplyToolbar(srcCanvas,tools){
+  const w=srcCanvas.width,h=srcCanvas.height,c=document.createElement('canvas');c.width=w;c.height=h;const cx=c.getContext('2d',{willReadFrequently:true});cx.drawImage(srcCanvas,0,0);
+  if(tools.bgBlur){const blur=document.createElement('canvas');blur.width=w;blur.height=h;const bc=blur.getContext('2d');bc.filter='blur('+Math.max(2,Math.round(Math.min(w,h)*.012))+'px)';bc.drawImage(c,0,0);const bd=bc.getImageData(0,0,w,h).data,si=cx.getImageData(0,0,w,h).data;const mix=new ImageData(w,h),md=mix.data;for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4,m=cleanRadialMask(x,y,w,h),bg=(1-m)*.92;md[i]=si[i]*m+bd[i]*bg;md[i+1]=si[i+1]*m+bd[i+1]*bg;md[i+2]=si[i+2]*m+bd[i+2]*bg;md[i+3]=255}cx.putImageData(mix,0,0)}
+  const im=cx.getImageData(0,0,w,h),d=im.data;
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=(y*w+x)*4;let m=tools.face?cleanRadialMask(x,y,w,h):0;if(tools.face&&m>.05){for(let ch=0;ch<3;ch++){const edge=4*d[i+ch]-d[i-4+ch]-d[i+4+ch]-d[i-w*4+ch]-d[i+w*4+ch];const fd=(tools.faceDetail||45)/100; const safe=tools.faceSafe?(0.45+0.55*m):1; d[i+ch]=Math.max(0,Math.min(255,d[i+ch]+edge*(.18+.42*fd)*safe));}}if(tools.bgEnhance){const outer=1-cleanRadialMask(x,y,w,h),depth=(tools.bgDepth||35)/100;for(let ch=0;ch<3;ch++){d[i+ch]=Math.max(0,Math.min(255,d[i+ch]*(1+.04*depth*outer)+5*depth*outer));}}}
+  if(tools.color){for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2],y=.2126*r+.7152*g+.0722*b;const contrast=(y-128)*.10;d[i]=Math.max(0,Math.min(255,r+contrast+3));d[i+1]=Math.max(0,Math.min(255,g+contrast+2));d[i+2]=Math.max(0,Math.min(255,b+contrast+1));}}
+  cx.putImageData(im,0,0);return c;
+}
+function cleanShowCompare(before,after){
+  const bw=Math.min(1200,before.width),bh=Math.round(before.height*bw/before.width);
+  ['cleanCompareBefore','cleanCompareAfter'].forEach(id=>{const q=$(id);q.width=bw;q.height=bh});
+  $('cleanCompareBefore').getContext('2d').drawImage(before,0,0,bw,bh);$('cleanCompareAfter').getContext('2d').drawImage(after,0,0,bw,bh);
+  cleanCompareSet($('cleanCompareRange').value);
+}
+function cleanCompareSet(v){v=Math.max(0,Math.min(100,+v));$('cleanAfterLayer').style.left=v+'%';$('cleanAfterLayer').style.width=(100-v)+'%';$('cleanCompareHandle').style.left=v+'%';}
+$('cleanCompareRange').oninput=e=>cleanCompareSet(e.target.value);
+$('cleanApplyToolsBtn').onclick=()=>{if(!active()){toast('Add an image first');return}if(!Object.values(cleanToolState).some(Boolean)){toast('Select at least one AI tool');return}const before=cleanCopyCanvas(canvas,canvas.width,canvas.height);cleanSetProgress(20,'Applying AI toolbar tools…');setTimeout(()=>{const out=cleanApplyToolbar(before,{...cleanToolState,faceSafe:$('cleanFaceSafe').checked,faceDetail:+$('cleanFaceDetail').value,bgDepth:+$('cleanBgDepth').value});cleanCommitCanvas(out,'AI Toolbar: '+Object.keys(cleanToolState).filter(k=>cleanToolState[k]).join(', '));cleanShowCompare(before,out);cleanSetProgress(100,'AI toolbar applied. Drag Before/After slider to compare.');toast('AI toolbar applied')},60)};
+$('cleanClearToolsBtn').onclick=()=>{cleanToolState={face:false,bgEnhance:false,bgBlur:false,color:false};['cleanFaceBtn','cleanBgEnhanceBtn','cleanBgBlurBtn','cleanColorBtn'].forEach(id=>$(id).classList.remove('active'));toast('AI toolbar cleared')};
+
+['cleanFaceDetail','cleanBgDepth','cleanDehaze','cleanTexture','cleanArtifact'].forEach(id=>{$(id).oninput=e=>$(id+'V').textContent=e.target.value});
+function cleanAdvancedOptions(){return {denoise:+$('cleanDenoise').value,sharp:+$('cleanSharp').value,clarity:+$('cleanClarity').value,light:+$('cleanLight').value,autoColor:$('cleanAutoColor').checked,color:0,faceDetail:+$('cleanFaceDetail').value,faceSafe:$('cleanFaceSafe').checked,dehaze:+$('cleanDehaze').value,texture:+$('cleanTexture').value,artifact:+$('cleanArtifact').value}}
+$('cleanAutoOptimizeBtn').onclick=()=>{if(!active()){toast('Add an image first');return}const d=ctx.getImageData(0,0,canvas.width,canvas.height).data;let sum=0,sum2=0,n=0;for(let i=0;i<d.length;i+=16){const y=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];sum+=y;sum2+=y*y;n++}const avg=sum/n,sd=Math.sqrt(Math.max(0,sum2/n-avg*avg));$('cleanDenoise').value=Math.round(Math.max(12,Math.min(62,38-sd*.18)));$('cleanSharp').value=Math.round(Math.max(20,Math.min(72,48+sd*.08)));$('cleanClarity').value=Math.round(Math.max(15,Math.min(65,30+sd*.12)));$('cleanLight').value=Math.round(Math.max(0,Math.min(60,(128-avg)*.55)));$('cleanDehaze').value=Math.round(Math.max(0,Math.min(55,18+(128-avg)*.12)));$('cleanTexture').value=28;$('cleanArtifact').value=22;['cleanDenoise','cleanSharp','cleanClarity','cleanLight','cleanDehaze','cleanTexture','cleanArtifact'].forEach(id=>$(id+'V').textContent=$(id).value);$('cleanAdvancedStatus').textContent='Settings optimized from brightness and contrast. Press Smart Clean to apply.';toast('Auto Optimize ready')};
+$('cleanPreviewToolsBtn').onclick=()=>{if(!active()){toast('Add an image first');return}const before=cleanCopyCanvas(canvas,canvas.width,canvas.height),o=cleanAdvancedOptions();const out=cleanProcessCanvas(before,o);cleanShowCompare(before,out);$('cleanAdvancedStatus').textContent='Preview generated. The main image has not been changed yet.';toast('Preview ready — main image unchanged')};
+
+$('qualityScanBtn').onclick=()=>{if(!active()){toast('Add an image first');return}const d=ctx.getImageData(0,0,canvas.width,canvas.height).data;let sum=0,sum2=0,n=0;for(let i=0;i<d.length;i+=16){const y=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];sum+=y;sum2+=y*y;n++}const avg=sum/n,sd=Math.sqrt(Math.max(0,sum2/n-avg*avg));const noise=Math.max(0,Math.min(100,Math.round(48-sd*.38)));$('qualityScanResult').innerHTML='<b>'+canvas.width+' × '+canvas.height+' px</b><br>Brightness: '+Math.round(avg)+'/255 · Contrast: '+Math.round(sd)+' · Estimated noise: '+noise+'%';toast('Quality scan complete')};
+
 updateUI();renderHistory();
 })();
 </script>
