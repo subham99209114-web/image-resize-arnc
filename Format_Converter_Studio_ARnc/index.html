@@ -141,11 +141,12 @@ footer{padding:18px 28px;color:#cbd5e1;font-size:12px;border-top:1px solid var(-
    <option value="image/tiff">TIFF</option>
    <option value="image/x-icon">ICO</option>
    <option value="image/svg+xml">SVG</option>
-   <option value="image/heic">HEIC / HEIF</option>
+   <option value="image/heic">HEIC (.heic)</option>
+   <option value="image/heif">HEIF (.heif, HEVC)</option>
    <option value="image/x-adobe-dng">RAW / DNG</option>
    <option value="application/pdf">PDF</option>
   </select>
-  <small class="note">HEIC/HEIF uses a browser-side encoder when supported. DNG export works from decoded images as an RGB-DNG-style file; true camera-sensor RAW → DNG conversion requires a dedicated RAW decoder.</small>
+  <small class="note">HEIC/HEIF uses a browser-side HEVC encoder. Windows Photos may also require the HEIF Image Extensions and HEVC Video Extensions installed in Windows; a browser cannot install these system codecs. DNG export works from decoded images as an RGB-DNG-style file; true camera-sensor RAW → DNG conversion requires a dedicated RAW decoder.</small>
  </div>
 
  <div class="control">
@@ -214,7 +215,66 @@ footer{padding:18px 28px;color:#cbd5e1;font-size:12px;border-top:1px solid var(-
 </div>
 
 <footer>
-<strong>Privacy:</strong> Conversion is performed locally in the browser whenever the selected decoder/encoder is available. External CDN libraries are used only to provide browser-side format decoding/encoding and ZIP/PDF utilities. RAW conversion is limited by browser decoder support and does not preserve the original camera RAW sensor file.
+<section class="footer-about" style="margin-top:28px;padding:24px 28px;border-top:1px solid var(--line);line-height:1.75;color:#e2e8f0;">
+<h2 style="margin:0 0 14px;color:#fff;font-size:24px;">About This Website</h2>
+<p>Format Converter Studio.ARnc is a browser-based file conversion and image processing website designed to make common media conversion tasks easier, faster, and more accessible. The purpose of the website is to provide a practical workspace where users can select one or more supported files, choose an output format, resize content when required, adjust image quality, and download the resulting files. The application is designed around the idea that many everyday conversion tasks can be completed directly inside a modern web browser without requiring a separate desktop installation.</p>
+<p>The website supports a broad collection of image and document-related formats. Depending on browser capabilities and the decoders or encoders available to the application, users can work with JPG, JPEG, PNG, WebP, AVIF, BMP, GIF, TIFF, SVG, ICO, PDF, HEIC, HEIF, and selected RAW camera formats. The interface also includes an option for DNG-style output. Format availability should always be understood together with browser support: a format being listed in the interface does not mean that every browser can decode or encode every variation of that format.</p>
+<p>The main conversion area is organized so that a user can choose files, select an output format, configure quality, select a resize mode, choose a background color, configure PDF page settings, and then process all selected files. The website can accept multiple files in one session. This makes the application useful for people who need to perform repeated conversions rather than opening a separate program for every file. A drag-and-drop area is also provided, allowing supported files to be added by dragging them into the browser window.</p>
+<p>The output format control provides several choices. Auto mode attempts to select a suitable format based on the original file extension. Users can also explicitly select formats such as JPEG, PNG, WebP, AVIF, BMP, GIF, TIFF, ICO, SVG, HEIC, DNG-style output, or PDF. The practical behavior of each option depends on the browser and the conversion implementation. Some formats have native browser support, while others are handled by browser-side JavaScript libraries or custom encoding routines included in the application.</p>
+<p>Quality control is available for formats where a quality parameter is meaningful, particularly lossy image formats. The quality slider lets users choose a value from low to high. A higher quality setting generally aims to preserve more visual detail while potentially producing a larger file. A lower setting can reduce file size while potentially reducing visual fidelity. The best setting depends on the purpose of the output, the dimensions of the image, the original compression, and the characteristics of the image itself.</p>
+<p>Resize controls allow users to keep the original dimensions, set a target width, set a target height, specify an exact width and height, or scale the image by a percentage. When only width or only height is selected, the application calculates the other dimension proportionally. Exact width and height can change the original aspect ratio, so users should select that mode deliberately when a fixed canvas size is required. Percentage scaling is useful when a relative reduction or enlargement is more convenient than entering pixel dimensions.</p>
+<p>Background handling is particularly relevant when converting transparent images to formats that do not preserve transparency. The application provides transparent, white, and black background choices. When the selected output cannot store transparency, the chosen background can be used as the underlying canvas. This helps prevent transparent areas from being interpreted unexpectedly during conversion. Users should inspect the preview or resulting file when transparency is important, because different formats have different rules for alpha channels.</p>
+<p>PDF conversion is included as part of the studio. PDF input can be rendered in the browser and processed page by page, while image content can be placed into a PDF document. Users can choose common page sizes such as A4 or Letter, or use image-fitting options. PDF orientation can be automatic, portrait, or landscape. The resulting document is created on the client side using browser JavaScript. The exact visual result can depend on the source dimensions, page proportions, browser rendering, and selected quality settings.</p>
+<p>SVG processing is designed for situations where vector content needs to be converted into a raster image or PDF representation. The SVG scale option allows the rasterization size to be adjusted. Because SVG files can contain external resources, scripts, fonts, filters, and features with varying browser support, not every SVG document is guaranteed to render identically in every environment. The application therefore treats browser rendering as the basis for the conversion rather than promising identical results to every professional desktop graphics application.</p>
+<p>TIFF, HEIC, and HEIF are handled through browser-side decoding support and associated JavaScript libraries. TIFF decoding uses a browser-accessible TIFF decoder, while HEIC and HEIF input can use a browser-side conversion library when it is available. These formats can be computationally heavier than ordinary JPEG or PNG files, especially when files are large. Processing time may therefore increase with file size, image dimensions, device memory, and browser performance.</p>
+<p>RAW camera files require special attention. Camera RAW formats are not a single universal format; different manufacturers and camera models may use different containers, compression methods, metadata, and sensor characteristics. The website can recognize several common RAW file extensions, but actual decoding depends on the browser and available decoder support. The application therefore does not promise that every RAW file will open successfully. Where true sensor-level RAW processing is required, dedicated RAW software may be more appropriate.</p>
+<p>The DNG output option should also be understood in context. The application can create an RGB-DNG-style output from decoded image data, but this is not equivalent to converting an original camera RAW sensor file into a fully metadata-preserving, sensor-native DNG. The source code itself identifies this limitation. Users who require professional camera metadata, original sensor data, color calibration information, or manufacturer-specific RAW characteristics should use specialized RAW conversion software.</p>
+<p>Batch processing is one of the central conveniences of the studio. Multiple selected files can be processed using the same conversion settings. A progress bar provides visual feedback while files are being processed. The application uses a small amount of controlled concurrency so that several files can be handled without attempting to process every file simultaneously. Actual performance varies according to file size, number of files, browser memory, processor speed, device type, and the complexity of each source format.</p>
+<p>After conversion, the results area shows information about each generated file, including dimensions, format, original size, final size, and the amount of reduction when applicable. Individual files can be downloaded using the Download button. The website also provides a ZIP option for downloading all converted files together. This can be particularly useful after batch conversion because it reduces the need to download many files separately. The ZIP package is assembled in the browser using JavaScript.</p>
+<p>The website is intentionally designed as a self-contained browser application. Its interface uses responsive CSS so that the main controls can adapt to desktop, tablet, and mobile screen sizes. The layout changes the number of columns at smaller widths and simplifies the result cards for narrow screens. This responsive behavior is intended to make the same application practical on different devices while retaining the same general workflow and visual identity.</p>
+<p>The visual design uses a green-to-purple gradient background, translucent panels, rounded cards, dashed file selection areas, and colored action buttons. These design choices are intended to create a modern studio-style interface while keeping important controls visible. The application does not require the user to navigate through multiple pages for ordinary conversion tasks. Instead, file selection, configuration, processing, results, and downloading are presented as parts of one workspace.</p>
+<p>The website also attempts to provide useful status information instead of silently changing files. The selected file count and total selected size are shown before conversion. After conversion, the application reports the number of generated outputs and compares original and final sizes. If a file cannot be processed, the conversion process records the error and reports which files failed. This behavior is important because format compatibility is not universal and a professional-looking interface should not imply that every possible file is guaranteed to succeed.</p>
+<p>A key part of the website's design is browser-side processing. The application code reads files selected by the user through normal browser file APIs and processes them in JavaScript. This architecture can reduce the need for a traditional upload-and-process server for supported operations. It can also be useful when users are working with large or sensitive images and prefer not to send the actual file to a conversion server. However, browser-side processing does not mean that the surrounding website makes no network requests; the application loads certain libraries from external CDN addresses, as described in the privacy section.</p>
+<p>The application depends on several browser capabilities and external JavaScript libraries. The supplied code references JSZip for ZIP creation, FileSaver for downloads, UTIF for TIFF handling, heic2any for HEIC/HEIF conversion, gif.js for GIF support, jsPDF for PDF creation, and PDF.js for PDF rendering. These dependencies allow a single HTML page to offer more formats than would normally be available through basic browser APIs. If a browser blocks a dependency, if a CDN is unavailable, or if a library changes behavior, some functions may not work as expected.</p>
+<p>The studio is therefore best understood as a convenient browser-based conversion utility rather than a replacement for every professional media application. It is suitable for everyday image conversion, resizing, compression, document-to-image rendering, batch preparation, and similar tasks. Professional workflows involving advanced color management, layered editing, proprietary RAW processing, preservation of every metadata field, animation timelines, multi-page document semantics, or specialized print requirements may need dedicated software.</p>
+<p>The website does not promise that conversion will always reduce file size. Some formats and settings can produce files that are larger than the original. A converted file can also have different visual characteristics because formats use different compression methods, color models, transparency rules, and metadata capabilities. Users should therefore check the generated output before deleting an original file. Keeping an original backup is especially important for valuable photographs, professional documents, and irreplaceable media.</p>
+<p>The project is designed around simplicity: select files, configure the desired result, convert, inspect, and download. The controls expose useful options without requiring the user to understand every internal encoding detail. At the same time, notes in the interface explain important limitations, such as browser-dependent RAW support and the behavior of transparency. The goal is to provide a useful balance between advanced format support and an approachable workflow.</p>
+<p>Format Converter Studio.ARnc can be useful for photographers, students, creators, website owners, developers, office users, and anyone who occasionally needs to change image formats or dimensions. A person preparing images for a website might convert a large JPEG to WebP or resize an image. A designer might create an ICO file for an application or website. A document user might render PDF pages into image-based outputs. A photographer might test whether a browser can decode a particular HEIC or RAW file. These are examples of intended use rather than guarantees of compatibility.</p>
+<p>The application is also suitable for experimenting with format characteristics. Users can compare output sizes, observe the effect of quality settings, and choose a background when moving from a transparent format to a non-transparent one. Such experimentation can help users decide which format works for a particular purpose. Because output behavior varies by browser and source material, the most reliable method is often to create a test output and inspect it before applying the same settings to a large collection of files.</p>
+<p>In summary, Format Converter Studio.ARnc is a client-oriented, responsive conversion workspace that brings multiple everyday file conversion tasks into one browser interface. It combines file selection, batch processing, resizing, quality control, background handling, PDF options, format-specific processing, previews, individual downloads, and ZIP packaging. Its capabilities are intentionally broad, but its limitations are equally important: browser support matters, external libraries may be required, some formats have special constraints, and professional workflows may require specialized applications.</p>
+</section>
+<section class="footer-privacy" style="margin-top:28px;padding:24px 28px;border-top:1px solid var(--line);line-height:1.75;color:#e2e8f0;">
+<h2 style="margin:0 0 14px;color:#fff;font-size:24px;">Privacy</h2>
+<p>Privacy is an important part of how Format Converter Studio.ARnc is designed. The supplied application is primarily built to process selected files in the user's web browser rather than sending the file contents to a dedicated conversion server. The conversion functions read local file objects, decode them in browser memory, create canvases or other browser-side representations, generate output blobs, and provide download actions. This architecture can reduce exposure of the actual file contents compared with a traditional upload-based converter. However, users should understand the distinction between local file processing and all network activity made by a web page.</p>
+<p>The application code states that files stay in the browser during processing whenever the relevant browser-side decoder or encoder is available. In practical terms, selecting a file through the file picker gives the web page temporary access to that selected file through browser APIs. The application can read the file for conversion while the page is open, but the supplied code does not contain an application-specific upload endpoint that sends the selected file to a conversion server. This is a significant privacy characteristic of the current design, but it should not be interpreted as a universal guarantee about every browser, extension, network environment, or third-party service.</p>
+<p>The website does load external JavaScript libraries from CDN services. The supplied HTML references libraries hosted through cdnjs, including JSZip, FileSaver.js, UTIF.js, heic2any, gif.js, jsPDF, and PDF.js. When a browser loads these scripts, the browser makes network requests to the relevant CDN domains. Those requests can expose ordinary technical information that is normally available to a web server, such as the requested resource, approximate network location, browser-related request information, and timing information. The application itself does not need to upload the user's image to these CDN services merely because their JavaScript libraries are downloaded.</p>
+<p>External libraries are used to provide browser-side functionality rather than to operate a remote file-conversion service. For example, JSZip is used to build ZIP archives in the browser, jsPDF is used to create PDF output, PDF.js is used to render PDF input, UTIF is used for TIFF processing, and heic2any can provide HEIC/HEIF decoding. These libraries execute within the browser context after being loaded. Users should nevertheless understand that a third-party CDN is involved in delivering the code, so the privacy characteristics of network requests to those CDNs are separate from the handling of the selected file data by the application.</p>
+<p>The website does not use the supplied code to create a user account, request a name, request an email address, or maintain a server-side profile for conversion activity. The HTML contains no application login system and no visible form for collecting personal identity information. This means the current application can be used without intentionally providing those identity details to the conversion interface. If the website is later embedded into a larger platform, advertising system, analytics system, login system, or hosting environment, additional data practices could apply and the privacy notice should then be updated to describe those services.</p>
+<p>The conversion process uses temporary browser objects such as File objects, Blob objects, object URLs, images, canvases, and generated output data. These are part of normal browser memory and temporary browser resources. Object URLs are created to display files or previews and are revoked in several parts of the application after use. Generated files are also kept in JavaScript memory while the result list exists. When the user clears the results or closes the page, the application no longer has the same in-memory references. Browser memory behavior is controlled by the browser, so the application should not be treated as a forensic deletion mechanism.</p>
+<p>The website should not be used as a substitute for an enterprise data-protection system when processing extremely sensitive information. Even when file contents are handled locally, the surrounding browser environment can include extensions, security software, operating-system services, browser synchronization, corporate monitoring, parental controls, network inspection, or other technologies outside the application's control. A user working with confidential business documents should therefore use a device and browser environment that is appropriate for the sensitivity of the material.</p>
+<p>The application does not intentionally store converted files in a server database according to the supplied code. Downloads are initiated through browser download mechanisms, and the ZIP archive is generated in browser memory. The code does not show a remote database connection for storing file contents. However, the hosting provider that serves the HTML page and the CDN providers that serve JavaScript libraries operate their own infrastructure. Their server logs and operational records are governed by their respective policies, which are separate from the application's own client-side conversion logic.</p>
+<p>Browser caching can also affect how web resources are stored temporarily. The website's HTML, CSS, JavaScript, and externally loaded libraries may be cached by the browser or intermediary network systems according to normal web caching behavior. This is different from storing the user's selected image on the application's conversion server. Users who require strict control over browser caches should use appropriate browser privacy settings or a controlled device environment. The website itself does not claim to control every cache layer between a user's device and an external CDN.</p>
+<p>The website may display previews of selected and converted files. These previews are generated from the selected data inside the browser. For supported image formats, the browser can display an object URL created from the local file. For some outputs, the application generates a smaller preview blob so that formats such as PDF, TIFF, SVG, or DNG-style output can be represented in the result card. These previews exist to make the interface useful; they are not designed as a separate cloud image storage service.</p>
+<p>Users should be careful when sharing generated download files. Once a file has been downloaded to a device, its privacy is governed by the device, file system, backup services, cloud synchronization, and any other applications that can access that location. The website cannot control what happens to a file after the browser saves it. If a converted document contains confidential information, the user should treat the downloaded result with the same care as the original file.</p>
+<p>The privacy design also depends on browser capabilities. Some formats, especially HEIC, HEIF, TIFF, PDF, SVG, and RAW camera formats, require additional browser-side decoding logic. If a required library is unavailable, the application may show an error rather than process the file. The application should not respond to an unsupported format by silently uploading the file to a remote server, because the supplied conversion architecture is intended to remain browser-side for supported operations.</p>
+<p>RAW camera files deserve special privacy and technical consideration. A RAW file can contain not only image data but also camera-specific metadata and information about the original capture. The application may be unable to decode a particular RAW format, and its DNG-style output is not intended to preserve every original sensor characteristic or metadata field. Users should not assume that converting a RAW file through this website preserves the complete original information. For archival or professional purposes, the original RAW should be retained separately.</p>
+<p>Metadata handling is influenced by the browser and the conversion path. The interface includes a control describing local processing and metadata removal where browser processing permits. In many canvas-based conversion paths, the newly generated image does not carry over all original file metadata automatically. However, metadata behavior varies by input type, output type, browser implementation, and conversion library. Therefore, the website does not promise complete metadata preservation or complete metadata removal for every format. Users who require certified metadata handling should verify the generated file with appropriate specialist software.</p>
+<p>Security is also a shared responsibility. Users should keep their browser and operating system updated, avoid opening suspicious files, and use trusted networks and devices when handling confidential information. The website's client-side architecture can reduce the need to upload files to a conversion server, but it does not make the user's entire computing environment secure. A malicious browser extension or compromised device could potentially access information independently of the conversion page. Such risks are outside the application's direct control.</p>
+<p>The website does not intentionally ask for passwords, payment-card details, government identification numbers, or other sensitive identity information for ordinary conversion use. Users should never paste confidential credentials into a file name, document field, or unrelated input simply because a webpage is open. If another website, popup, extension, or advertisement asks for such information, that request should be evaluated separately from the conversion tool. The conversion interface itself is designed around selecting files and conversion settings rather than collecting identity credentials.</p>
+<p>Cookies and analytics deserve separate consideration when the page is hosted inside a broader website. The supplied HTML does not contain an application-specific cookie-setting routine or an analytics script in the visible source. However, hosting platforms, embedded services, browser extensions, or future versions of the website could introduce additional technologies. For that reason, this privacy description should be read as describing the behavior of the supplied HTML application, not every possible environment in which someone might publish or embed it.</p>
+<p>If the application is modified in the future to add analytics, advertising, authentication, cloud storage, AI processing, online file sharing, or a remote conversion API, those changes could materially alter the privacy model. In that situation, the privacy notice should be updated before the new functionality is presented as part of the service. In particular, any feature that uploads an image or document to a remote server should clearly explain that fact, the purpose of the upload, how long the data is retained, who processes it, and how users can request deletion where applicable.</p>
+<p>The current client-side architecture means that a user can often disconnect from the internet after the required page resources and libraries have loaded and still perform some operations, although this is dependent on browser cache behavior and the particular operation. External libraries must generally be available when the page first loads. A network interruption can therefore prevent initial loading or prevent a required dependency from being retrieved, even though the actual selected file conversion may later occur locally.</p>
+<p>Users should also understand that the privacy statement does not constitute a guarantee that every possible third-party service has identical data practices. The application references external CDN resources, and those services are separate organizations. Their handling of technical request data is governed by their own terms and policies. The safest interpretation is that the converter is designed not to upload the selected file contents for ordinary supported conversion, while acknowledging that the browser still communicates with external services to retrieve the application's dependencies and the website itself may be hosted on infrastructure that maintains ordinary server records.</p>
+<p>For children and younger users, the same basic principle applies: files should only be selected when the user has permission to process them, and sensitive personal information should not be shared unnecessarily. Parents, guardians, schools, and organizations may have their own rules regarding what files can be processed through browser tools. The application does not verify the identity, ownership, or consent status of a file, so the person using the tool is responsible for ensuring that the file may lawfully and appropriately be processed.</p>
+<p>Copyright and confidentiality are also relevant to privacy. A file can contain private information even when the user is legally allowed to use it, and a file can contain copyrighted material even when it is not private. The conversion tool is intended to change formats or dimensions, not to determine ownership rights or grant permission to redistribute content. Users are responsible for making sure that their conversion, download, storage, and sharing activities comply with applicable laws, licenses, contracts, and organizational policies.</p>
+<p>The website does not guarantee permanent availability of any generated result. Because conversion occurs in browser memory, a page refresh, tab closure, browser crash, memory pressure, or device restart can cause unsaved generated results to disappear. Users should download important outputs promptly. The absence of server-side storage is useful from a data-minimization perspective, but it also means there is no cloud archive that can restore a file after the browser session has ended.</p>
+<p>In practical terms, users who want to maximize privacy should select files only when necessary, use a trusted and updated browser, review the destination of downloaded files, avoid unnecessary third-party browser extensions, and keep original files safely backed up. If a file is extremely sensitive, users should also consider whether a local desktop application operating entirely within a controlled environment is more appropriate for their requirements. The website is a convenience tool, not a substitute for a formally audited secure-processing environment.</p>
+<p>The privacy approach of Format Converter Studio.ARnc can therefore be summarized as data minimization through browser-side processing wherever the supplied implementation supports it. The application is designed to read selected files locally, process them with browser JavaScript, create results in memory, and let the user download those results. It does not show an application-specific upload API or server-side file database in the supplied code. At the same time, it loads third-party JavaScript resources through CDNs and operates within the normal web, browser, hosting, and network ecosystem. Users should understand both sides of that model rather than assuming that a web application makes no network requests at all.</p>
+<p>By using the website, users acknowledge that browser technology, third-party libraries, hosting infrastructure, and device settings can affect the actual behavior of the service. The website is provided as a practical browser-based utility, and compatibility or privacy characteristics may change if the code, dependencies, browser, or hosting environment changes. This privacy information is intended to explain the behavior of the supplied application in clear language; it is not a promise of absolute security, absolute anonymity, or universal compatibility.</p>
+</section>
+<div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--line);">
+<strong>Privacy summary:</strong> Conversion is performed locally in the browser whenever the selected decoder/encoder is available. External CDN libraries are used to provide browser-side format decoding/encoding and ZIP/PDF utilities. RAW conversion is limited by browser decoder support and does not preserve the original camera RAW sensor file.
+</div>
 </footer>
 </div>
 
@@ -255,7 +315,7 @@ function fmtBytes(n){
 function baseName(n){return n.replace(/\.[^.]+$/,'')}
 function extForMime(m){
  return ({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/avif':'avif','image/bmp':'bmp',
- 'image/gif':'gif','image/tiff':'tiff','image/x-icon':'ico','image/svg+xml':'svg','image/heic':'heic','image/x-adobe-dng':'dng','application/pdf':'pdf'})[m]||'bin';
+ 'image/gif':'gif','image/tiff':'tiff','image/x-icon':'ico','image/svg+xml':'svg','image/heic':'heic','image/heif':'heif','image/x-adobe-dng':'dng','application/pdf':'pdf'})[m]||'bin';
 }
 function typeLabel(file){
  const n=file.name.toLowerCase();
@@ -403,70 +463,23 @@ function icoBlob(canvas){
  return new Blob([buf],{type:'image/x-icon'});
 }
 async function gifBlob(canvas){
- // Standards-compliant single-frame GIF encoder.
- // Uses a conservative 8-bit palette and literal LZW codes with CLEAR
- // codes so the downloaded GIF is readable by standard image viewers.
- const ctx=canvas.getContext('2d',{willReadFrequently:true});
- const w=Math.max(1,Math.min(65535,canvas.width|0));
- const h=Math.max(1,Math.min(65535,canvas.height|0));
- const rgba=ctx.getImageData(0,0,w,h).data;
-
- // Fixed 3-3-2 RGB palette (256 colors).
- const palette=new Uint8Array(256*3);
- let po=0;
- for(let i=0;i<256;i++){
-  const r=(i>>5)&7,g=(i>>2)&7,b=i&3;
-  palette[po++]=Math.round(r*255/7);
-  palette[po++]=Math.round(g*255/7);
-  palette[po++]=Math.round(b*255/3);
- }
-
- // Convert RGBA pixels to palette indexes.
- const pixels=new Uint8Array(w*h);
- for(let i=0,j=0;i<rgba.length;i+=4,j++){
-  const r=rgba[i],g=rgba[i+1],b=rgba[i+2];
-  pixels[j]=((r>>5)<<5)|((g>>5)<<2)|(b>>6);
- }
-
- // GIF LZW. After each literal, CLEAR resets the dictionary. This is
- // intentionally conservative: it trades compression for decoder safety.
- function lzwLiteral(data){
-  const clear=256,end=257,codeSize=9;
-  const out=[]; let bitPos=0,cur=0;
-  const emit=code=>{
-   cur|=code<<bitPos; bitPos+=codeSize;
-   while(bitPos>=8){out.push(cur&255);cur=Math.floor(cur/256);bitPos-=8;}
-  };
-  emit(clear);
-  for(let i=0;i<data.length;i++){emit(data[i]);emit(clear)}
-  emit(end);
-  if(bitPos>0)out.push(cur&255);
-  return new Uint8Array(out);
- }
-
- const compressed=lzwLiteral(pixels),bytes=[];
- const pushStr=str=>{for(let i=0;i<str.length;i++)bytes.push(str.charCodeAt(i))};
- const push16=n=>bytes.push(n&255,(n>>8)&255);
- pushStr('GIF89a');
- push16(w);push16(h);
- // Global color table: 256 entries.
- bytes.push(0xF7,0,0);
- for(const v of palette)bytes.push(v);
- // Graphic Control Extension: no transparency, zero delay.
- bytes.push(0x21,0xF9,0x04,0x00,0x00,0x00,0x00,0x00);
- // Image descriptor: no local table, no interlace.
- bytes.push(0x2C);push16(0);push16(0);push16(w);push16(h);bytes.push(0x00);
- bytes.push(0x08); // LZW minimum code size.
- // Image-data sub-blocks, max 255 bytes each.
- for(let i=0;i<compressed.length;i+=255){
-  const n=Math.min(255,compressed.length-i); bytes.push(n);
-  for(let j=0;j<n;j++)bytes.push(compressed[i+j]);
- }
- bytes.push(0x00); // End of image data.
- bytes.push(0x3B); // GIF trailer.
- return new Blob([new Uint8Array(bytes)],{type:'image/gif'});
+ // gif.js provides higher-quality palette quantization and standards-compliant LZW.
+ if(typeof window.GIF!=='function')throw new Error('GIF encoder library is unavailable. Please reload the page and try again.');
+ const quality=Math.max(1,Math.min(20,Math.round((101-(+$('quality').value||90))/5)));
+ // A file:// page has origin "null"; use a Blob worker wrapper rather than
+ // constructing a Worker directly from the remote CDN URL.
+ const workerCode="importScripts('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');";
+ const workerUrl=URL.createObjectURL(new Blob([workerCode],{type:'application/javascript'}));
+ return await new Promise((resolve,reject)=>{
+  let settled=false;
+  const finish=(fn,value)=>{if(settled)return;settled=true;if(fn!==resolve){try{gif.abort()}catch(e){}};try{URL.revokeObjectURL(workerUrl)}catch(e){};fn(value)};
+  const gif=new GIF({workers:2,quality,workerScript:workerUrl,width:canvas.width,height:canvas.height,repeat:0});
+  gif.on('finished',blob=>finish(resolve,blob));
+  gif.on('abort',()=>finish(reject,new Error('GIF encoding was cancelled.')));
+  try{gif.addFrame(canvas,{copy:true,delay:100});gif.render()}catch(e){finish(reject,e)}
+  setTimeout(()=>{if(!settled)finish(reject,new Error('GIF encoding timed out. Try opening this page through localhost or GitHub Pages.'))},120000);
+ });
 }
-
 async function tiffBlob(canvas){
  const w=canvas.width,h=canvas.height;
  const rgba=canvas.getContext('2d').getImageData(0,0,w,h).data;
@@ -569,40 +582,89 @@ async function pdfBlob(canvas){
 }
 
 function rawDngBlobFromCanvas(canvas){
- const w=canvas.width,h=canvas.height,ctx=canvas.getContext('2d');
- const rgba=ctx.getImageData(0,0,w,h).data;
- const rgbSize=w*h*3;
- const headerSize=8,ifdCount=13,ifdSize=2+ifdCount*12+4;
- const bitsOffset=headerSize+ifdSize;
- const modelText=new TextEncoder().encode('ARnc RGB-DNG\\0');
- const modelOffset=bitsOffset+6;
- const matrixOffset=modelOffset+modelText.length;
- const stripOffset=matrixOffset+36;
- const total=stripOffset+rgbSize;
- const b=new ArrayBuffer(total),dv=new DataView(b),u=new Uint8Array(b);
- const U16=(o,v)=>dv.setUint16(o,v,true),U32=(o,v)=>dv.setUint32(o,v,true),I32=(o,v)=>dv.setInt32(o,v,true);
- // TIFF header
- u[0]=0x49;u[1]=0x49;U16(2,42);U32(4,8);U16(8,ifdCount);
- let e=10;
- const entry=(tag,type,count,val)=>{U16(e,tag);U16(e+2,type);U32(e+4,count);if(type===3&&count===1)U16(e+8,val);else U32(e+8,val);e+=12};
+ // Write an uncompressed, 8-bit RGB TIFF/DNG-style file with consistent TIFF offsets.
+ // This is decoded-pixel output, not sensor-native camera RAW.
+ const w=canvas.width,h=canvas.height,rgba=canvas.getContext('2d').getImageData(0,0,w,h).data;
+ const count=15, ifdStart=8, ifdBytes=2+count*12+4;
+ const bitsOffset=ifdStart+ifdBytes, modelBytes=new TextEncoder().encode('ARnc RGB Rendered Image\\0');
+ const modelOffset=bitsOffset+6, stripOffset=modelOffset+modelBytes.length, rgbSize=w*h*3;
+ const total=stripOffset+rgbSize, buf=new ArrayBuffer(total), dv=new DataView(buf), u=new Uint8Array(buf);
+ const u16=(o,v)=>dv.setUint16(o,v,true),u32=(o,v)=>dv.setUint32(o,v,true);
+ u[0]=0x49;u[1]=0x49;u16(2,42);u32(4,ifdStart);u16(ifdStart,count);
+ let e=ifdStart+2;
+ const entry=(tag,type,n,val)=>{u16(e,tag);u16(e+2,type);u32(e+4,n); if(type===3&&n===1)u16(e+8,val);else u32(e+8,val);e+=12};
  entry(256,4,1,w); entry(257,4,1,h); entry(258,3,3,bitsOffset); entry(259,3,1,1);
- entry(262,3,1,34892); entry(273,4,1,stripOffset); entry(277,3,1,3); entry(278,4,1,h);
- entry(279,4,1,rgbSize); entry(284,3,1,1); entry(50706,1,4,0x00010400); entry(50707,1,4,0x00010300); entry(50708,2,modelText.length,modelOffset);
- U32(e,0); // next IFD
- // BitsPerSample = 8,8,8
- U16(bitsOffset,8);U16(bitsOffset+2,8);U16(bitsOffset+4,8);
- u.set(modelText,modelOffset);
- // ColorMatrix1: simple D65/sRGB approximation as signed rationals
- const vals=[[506752,1000000],[-21408,1000000],[-21288,1000000],[-125072,1000000],[655360,1000000],[176000,1000000],[0,1000000],[0,1000000],[918000,1000000]];
- let mo=matrixOffset;for(const [n,d] of vals){I32(mo,n);I32(mo+4,d);mo+=8}
- // DNG private tags appended after core IFD entries via a second tiny IFD is not needed; keep core TIFF + DNGVersion.
- let q=stripOffset;
- for(let i=0;i<rgba.length;i+=4){u[q++]=rgba[i];u[q++]=rgba[i+1];u[q++]=rgba[i+2]}
- // Add a DNGVersion/BackwardVersion and ColorMatrix tags by rebuilding IFD with enough entries.
- // The above compact IFD intentionally stays readable by TIFF/DNG readers; metadata extras are optional.
- return new Blob([b],{type:'image/x-adobe-dng'});
+ entry(262,3,1,2); entry(273,4,1,stripOffset); entry(277,3,1,3); entry(278,4,1,h);
+ entry(279,4,1,rgbSize); entry(284,3,1,1); entry(296,3,1,2); entry(305,2,modelBytes.length,modelOffset);
+ entry(339,3,3,bitsOffset); entry(50706,1,4,0x00010400); entry(50707,1,4,0x00010300);
+ u32(e,0);u16(bitsOffset,8);u16(bitsOffset+2,8);u16(bitsOffset+4,8);u.set(modelBytes,modelOffset);
+ let q=stripOffset;for(let i=0;i<rgba.length;i+=4){u[q++]=rgba[i];u[q++]=rgba[i+1];u[q++]=rgba[i+2]}
+ return new Blob([buf],{type:'image/x-adobe-dng'});
 }
-
+let heicEncoderModulePromise=null;
+async function heicBlob(canvas,outputMime='image/heic'){ 
+ // Use elheif's HEVC encoder and reject any output that cannot be decoded
+ // back into an image with the same dimensions before it is offered to download.
+ try{
+  if(!heicEncoderModulePromise){
+   heicEncoderModulePromise=import('https://esm.sh/elheif@0.1.0?bundle');
+  }
+  const mod=await heicEncoderModulePromise;
+  const api=mod.default&&typeof mod.default.jsEncodeImage==='function'?mod.default:mod;
+  if(typeof api.ensureInitialized!=='function'||typeof api.jsEncodeImage!=='function'||typeof api.jsDecodeImage!=='function')
+   throw new Error('HEIC encoder/decoder API is incomplete.');
+  await api.ensureInitialized();
+  const w=canvas.width,h=canvas.height;
+  if(!w||!h)throw new Error('The source image has empty dimensions.');
+  const imageData=canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h);
+  // Copy the pixels into a plain Uint8Array for the WebAssembly binding.
+  const rgba=new Uint8Array(imageData.data.length);
+  rgba.set(imageData.data);
+  const result=api.jsEncodeImage(rgba,w,h);
+  if(!result||result.err||!result.data||!result.data.length)
+   throw new Error(result&&result.err?result.err:'HEIC encoder returned empty data.');
+  const bytes=result.data instanceof Uint8Array?new Uint8Array(result.data):new Uint8Array(result.data);
+  if(bytes.length<32||String.fromCharCode(bytes[4],bytes[5],bytes[6],bytes[7])!=='ftyp')
+   throw new Error('Encoder output is not a complete ISO-BMFF HEIF file (missing ftyp box).');
+  const u32=(a,o)=>(((a[o]<<24)|(a[o+1]<<16)|(a[o+2]<<8)|a[o+3])>>>0);
+  let ftypSize=u32(bytes,0);
+  if(ftypSize===1){
+   if(bytes.length<32)throw new Error('Invalid extended HEIF ftyp box.');
+   const hi=u32(bytes,8),lo=u32(bytes,12);
+   if(hi!==0||lo<24)throw new Error('Unsupported or invalid HEIF ftyp size.');
+   ftypSize=lo;
+  }
+  if(ftypSize<16||ftypSize>bytes.length||((ftypSize-8)%4)!==0)
+   throw new Error('Invalid HEIF ftyp box length.');
+  const brands=[];
+  for(let i=8;i+4<=ftypSize;i+=4)brands.push(String.fromCharCode(bytes[i],bytes[i+1],bytes[i+2],bytes[i+3]));
+  // Do not give generic HEIF/AVIF or unrelated containers a .heic suffix.
+  const heicBrands=['heic','heix','hevc','hevx','heim','heis'];
+  if(!brands.some(b=>heicBrands.includes(b)))
+   throw new Error('Encoder produced a generic HEIF container, not a HEIC-branded file; refusing to save it as .heic.');
+  // Require a media-data box in addition to the file-type header.
+  let hasMdat=false;
+  for(let i=ftypSize;i+8<=bytes.length;){
+   const size=u32(bytes,i),type=String.fromCharCode(bytes[i+4],bytes[i+5],bytes[i+6],bytes[i+7]);
+   if(type==='mdat'&&size>=8&&i+size<=bytes.length){hasMdat=true;break;}
+   if(size===0)break;
+   if(size===1){if(i+16>bytes.length)break;const hi=u32(bytes,i+8),lo=u32(bytes,i+12);if(hi!==0||lo<16||i+lo>bytes.length)break;i+=lo;}
+   else {if(size<8||i+size>bytes.length)break;i+=size;}
+  }
+  if(!hasMdat)throw new Error('HEIC container has no complete image media-data box.');
+  // Round-trip through the codec, and reject an output whose decoded pixels are empty.
+  const check=api.jsDecodeImage(bytes);
+  if(!check||check.err||!Array.isArray(check.data)||!check.data.length)
+   throw new Error('HEIC round-trip decode failed'+(check&&check.err?': '+check.err:'.'));
+  const decoded=check.data[0];
+  if(decoded.width!==w||decoded.height!==h||!decoded.data||decoded.data.length<w*h*4)
+   throw new Error('HEIC/HEIF round-trip dimensions/pixel data do not match the source.');
+  return new Blob([bytes],{type:outputMime==='image/heif'?'image/heif':'image/heic'});
+ }catch(e){
+  heicEncoderModulePromise=null;
+  throw new Error('HEIC file failed encoder validation and was not downloaded: '+(e&&e.message?e.message:String(e))+'. Use the site on HTTPS/localhost with internet access. If a validated HEIC still will not open in Windows Photos, install Windows HEIF Image Extensions or test in another HEIF-capable viewer.');
+ }
+}
 async function rawDngBlob(sourceFile,canvas){
  const n=sourceFile.name.toLowerCase();
  if(/\.dng$/i.test(n)) return sourceFile.slice(0,sourceFile.size,'image/x-adobe-dng');
@@ -618,7 +680,7 @@ async function encodeCanvas(canvas,mime){
  const outCanvas=canvasForOutput(canvas,mime);
  if(mime==='image/bmp')return bmpBlob(outCanvas);
  if(mime==='image/x-icon')return icoBlob(canvas);
- if(mime==='image/heic')return heicBlob(outCanvas);
+ if(mime==='image/heic'||mime==='image/heif')return heicBlob(outCanvas,mime);
  if(mime==='image/gif')return gifBlob(outCanvas);
  if(mime==='image/tiff')return tiffBlob(outCanvas);
  if(mime==='image/svg+xml')return svgBlob(canvas);
@@ -638,7 +700,8 @@ function autoMime(file){
  if(ext==='tif'||ext==='tiff')return 'image/tiff';
  if(ext==='svg')return 'image/svg+xml';
  if(ext==='ico')return 'image/x-icon';
- if(ext==='heic'||ext==='heif')return 'image/heic';
+ if(ext==='heic')return 'image/heic';
+ if(ext==='heif')return 'image/heif';
  if(ext==='dng'||ext==='raw')return 'image/x-adobe-dng';
  return 'image/png';
 }
@@ -667,7 +730,7 @@ async function convertOne(it){
   }catch(e){throw e}
   const suffix=decoded.pages.length>1?`_page-${pi+1}`:'';
   const name=baseName(it.file.name)+'_converted'+suffix+'.'+extForMime(mime);
-  const needsPreview = mime==='image/heic' || mime==='image/x-adobe-dng' || mime==='application/pdf' || mime==='image/svg+xml' || mime==='image/tiff';
+  const needsPreview = mime==='image/heic' || mime==='image/heif' || mime==='image/x-adobe-dng' || mime==='application/pdf' || mime==='image/svg+xml' || mime==='image/tiff';
   out.push({name,blob,previewBlob:needsPreview?await canvasToPreviewBlob(canvas):null,original:it.file,oldSize:it.file.size,newSize:blob.size,mime,w,h,page:pi+1,pages:decoded.pages.length});
  }
  return out;
@@ -681,7 +744,7 @@ function showConverted(){
   const visual=!!r.previewBlob || (/^image\//.test(r.mime)&&r.mime!=='image/svg+xml');
   card.innerHTML=`<div class="thumb">${visual?`<img src="${url}" alt="">`:`<div class="fileicon">${r.mime==='application/pdf'?'📄':r.mime==='image/svg+xml'?'🔷':'🖼️'}</div>`}</div>
   <div class="cardbody"><div class="name">${escapeHtml(r.name)}</div>
-  <div class="meta">${r.w} × ${r.h}px${r.pages>1?`<br>Page: ${r.page}/${r.pages}`:''}<br>Format: ${r.mime}<br>Original: ${fmtBytes(r.oldSize)} → Final: ${fmtBytes(r.newSize)}<br>${r.newSize<r.oldSize?'Reduced by '+((1-r.newSize/r.oldSize)*100).toFixed(1)+'%':'File size increased'}</div>
+  <div class="meta">${r.w} × ${r.h}px${r.pages>1?`<br>Page: ${r.page}/${r.pages}`:''}<br>Format: ${r.mime}<br>Original: ${fmtBytes(r.oldSize)} → Final: ${fmtBytes(r.newSize)}<br>${r.newSize<r.oldSize?'Reduced by '+((1-r.newSize/r.oldSize)*100).toFixed(1)+'%':'File size increased'}${(r.mime==='image/heic'||r.mime==='image/heif')?'<br><b>Windows note:</b> HEIC/HEIF uses HEVC. Windows Photos may need HEIF Image Extensions and HEVC Video Extensions.': ''}</div>
   <button class="btn green" data-dl="${i}">⬇️ Download</button></div>`;
   results.appendChild(card);
  });
