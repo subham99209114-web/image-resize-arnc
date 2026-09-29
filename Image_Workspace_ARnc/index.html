@@ -15,6 +15,7 @@
   gtag('config', 'G-8S1C35WS5Q');
 </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <title>Image Workspace.ARnc — Advanced Professional Studio</title>
 <style>
 :root{
@@ -135,6 +136,34 @@ body.theme-light input[type=text],body.theme-light input[type=number],body.theme
 .cropToolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.cropToolbar .btn{font-size:11px}.cropToolbar .btn.active{outline:2px solid rgba(90,169,255,.75);background:linear-gradient(135deg,#1c4770,#14523f);color:#fff}
 .cropHelp{font-size:10px;color:var(--muted);line-height:1.45;margin-top:7px}
 @media(max-width:720px){.cropHandle{width:16px;height:16px}.cropHandle.nw{left:-8px;top:-8px}.cropHandle.n{top:-8px;margin-left:-8px}.cropHandle.ne{right:-8px;top:-8px}.cropHandle.e{right:-8px;margin-top:-8px}.cropHandle.se{right:-8px;bottom:-8px}.cropHandle.s{bottom:-8px;margin-left:-8px}.cropHandle.sw{left:-8px;bottom:-8px}.cropHandle.w{left:-8px;margin-top:-8px}}
+
+/* ===== Informational Footer — added without changing existing editor design ===== */
+.site-footer{
+  margin-top:0;
+  padding:34px 18px 24px;
+  background:rgba(5,12,22,.96);
+  border-top:1px solid var(--line);
+  color:var(--text);
+}
+.site-footer-inner{max-width:1400px;margin:0 auto}
+.site-footer-intro{padding:18px 20px;margin-bottom:16px;background:linear-gradient(180deg,rgba(20,36,56,.92),rgba(10,24,40,.92));border:1px solid var(--line);border-radius:13px}
+.site-footer-intro h2{margin:0 0 7px;font-size:20px}
+.site-footer-intro p{margin:0;color:var(--muted);line-height:1.7;font-size:13px}
+.site-footer-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.site-footer-column{background:linear-gradient(180deg,rgba(20,36,56,.92),rgba(10,24,40,.92));border:1px solid var(--line);border-radius:13px;padding:20px}
+.site-footer-column>h2{margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid var(--line);font-size:18px}
+.site-footer-column article{margin:0 0 18px}
+.site-footer-column article:last-child{margin-bottom:0}
+.site-footer-column h3{margin:0 0 7px;font-size:13px;color:var(--text)}
+.site-footer-column p{margin:0;color:var(--muted);font-size:12px;line-height:1.75}
+.site-footer-bottom{margin-top:16px;padding:14px 16px;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:11px;line-height:1.6}
+@media(max-width:720px){
+  .site-footer{padding:24px 10px 18px}
+  .site-footer-grid{grid-template-columns:1fr}
+  .site-footer-column{padding:14px}
+  .site-footer-intro{padding:14px}
+}
+
 </style>
 </head>
 <body>
@@ -453,7 +482,12 @@ body.theme-light input[type=text],body.theme-light input[type=number],body.theme
       <label class="check"><input id="stripMeta" type="checkbox" checked> Privacy export — canvas output strips original EXIF by default</label>
       <label class="check"><input id="includeDate" type="checkbox"> Add export timestamp to filename</label>
       <button class="btn primary" id="downloadCurrent">Download Current</button>
-      <div class="notice" style="margin-top:9px">Canvas-based export intentionally does not preserve original EXIF/GPS metadata. This is a privacy-oriented local export behavior.</div>
+      <div class="grid2" style="margin-top:8px">
+        <button class="btn" id="pdfCurrentBtn">📄 PDF Current</button>
+        <button class="btn" id="pdfAllBtn">📑 PDF All Images</button>
+      </div>
+      <button class="btn" id="zipAllBtn" style="width:100%;margin-top:8px">🗜️ Download All as ZIP</button>
+      <div class="notice" style="margin-top:9px">Canvas-based export intentionally does not preserve original EXIF/GPS metadata. PDF and ZIP are generated in the browser.</div>
     </div>
   </section>
 
@@ -468,504 +502,6 @@ body.theme-light input[type=text],body.theme-light input[type=number],body.theme
 <input id="fileInput" type="file" accept="image/*" multiple hidden>
 <div class="modal" id="compareModal"><div class="modal-box"><div class="row"><h2 style="margin:0">Before / After</h2><button class="btn small" style="margin-left:auto" id="closeCompare">Close</button></div><div class="compare" style="margin-top:14px"><div><div class="muted">Original</div><img id="beforeImg" alt="Original"></div><div><div class="muted">Processed</div><img id="afterImg" alt="Processed"></div></div></div></div>
 <div class="toast" id="toast"></div>
-
-  <footer class="siteFooter" id="siteFooter">
-  <section class="footerAbout">
-    <h2>About this website</h2>
-    <p>this website is a browser-based photo editing workspace designed to bring useful image editing functions together in one focused and easy-to-understand interface. The editor is built around a central canvas where an uploaded photograph can be viewed and edited, while the surrounding toolbar, side tools and adjustment panel provide access to the main controls. The purpose of this website is to make common image-editing work practical for everyday users without requiring a separate desktop application for basic tasks. Users can open an image from their device, choose an image through the upload area, drag and drop a photograph into the editor, or paste an image from the clipboard when supported by the browser. After an image is loaded, the existing workspace provides controls for light, color and detail adjustments, including brightness, exposure, contrast, highlights, shadows, vignette, saturation, temperature, tint, blur and sharpness. These controls are designed to provide direct visual adjustment while the image remains inside the editor canvas.</p>
-    <p>The Crop area provides free cropping as well as common fixed ratios such as square, four-by-three and sixteen-by-nine. Straightening is also available for correcting the visual angle of a photograph. The editor includes transformation controls for rotating the image to the left or right and for flipping the image horizontally or vertically. The Resize area supports pixel dimensions, percentage-based resizing and centimeter-based sizing, with an option to keep the image aspect ratio. These tools are useful when an image needs to be prepared for a particular screen, document, website, social platform or other destination that requires a specific size.</p>
-    <p>this website also contains creative controls for changing the visual appearance of photographs. Preset filters include Original, Vivid, B&amp;W, Sepia, Cool, Warm, Matte and Dramatic. Additional creative effects include Invert, Posterize, Pixelate and Duotone. These features are intended to let users experiment with different looks without leaving the editor. The Text tool allows a user to enter text, select a font, change the font size and choose a text color before placing the text on the image. Text can then be moved directly on the canvas. The Draw area provides a brush and eraser workflow, with controls for brush color and brush size, allowing users to add marks or remove drawn areas as part of the editing process.</p>
-    <p>Background tools are another important part of the editor. The current interface includes an AI-powered background-removal workflow that loads the browser background-removal model when required, processes the image and creates a transparent foreground result. A processing overlay communicates that the background-removal operation is in progress. After removal, the transparent result can be used with the background replacement controls. A solid background color can be selected, or a background image can be chosen from the device and applied behind the foreground. This makes the background section useful for product images, portraits, creative compositions and other situations where the original background needs to be removed or replaced.</p>
-    <p>The editor also includes project and output functionality. Users can save a project using the existing Save control and later open an ARnc project file to restore the editing state. The project structure can retain image information, text elements, rotation, flips, selected filters, adjustment values and background color information. The Export control allows the edited image to be produced as PNG, JPG or WEBP. The editor also includes undo and redo history so that changes can be reversed or restored during an editing session. Zoom controls make it possible to enlarge or reduce the canvas view, while Fit adjusts the image to the available workspace. Current image dimensions are shown in the footer status area.</p>
-    <p>this website is designed with responsive use in mind. On smaller screens, the interface changes its layout so the tool area can occupy a dedicated portion of the available space while the central image workspace remains accessible. In landscape mobile use, the editor can retain a side-by-side working arrangement with the tool panel positioned over the available side area when opened. The goal is to keep the existing editor controls usable across desktop, portrait mobile and landscape mobile orientations rather than removing important functions simply because the screen is smaller. The footer feature boxes below summarize the major capabilities of the website and are interactive: clicking a feature opens its longer explanation, and clicking it again returns the box to its compact form.</p>
-    <p>this website is intended as a practical, local-first style editing workspace where many everyday image operations can be performed directly in the browser. Depending on the feature and browser environment, processing can use the device itself, including canvas-based image operations and the browser-loaded background-removal model. Users should keep a copy of important original photographs before performing major edits, especially when preparing images for professional or archival purposes. The editor provides a convenient working environment, but the final output should always be checked at its intended size and format before publishing, printing or submitting it to another service.</p>
-    <p>The interface is organized so that the main editor remains the focus. The compact footer continues to display zoom, status and dimensions, while the expanded feature-information area is placed within the footer and does not replace the existing editing tools. Each feature is placed in its own box to make the available functionality easier to understand. The boxes are independent, so opening one explanation does not require changing the behavior of another feature box. This keeps the information area organized even when several features are listed together. The longer descriptions are available on demand, which helps keep the default footer compact while still providing detailed information for users who want to learn what the website can do.</p>
-    <p>Overall, this website brings together image opening, canvas preview, adjustments, cropping, straightening, filters, creative effects, text, drawing, background removal, background replacement, resizing, transformations, project saving, project restoration, exporting, undo and redo, zoom and responsive editing in a single browser-based workspace. The feature information at the bottom of the website is intended to explain these capabilities in long-form language without changing the core editor workflow. Existing buttons, controls, canvas behavior and the visual structure of the editor remain the primary working interface, while the new footer information provides an additional reference for visitors who want a fuller understanding of the available features.</p>
-
-    <h2>Privacy Policy – Image Workspace.ARnc </h2>
-    <p>Privacy Policy – Image Workspace.ARnc
-
-Welcome to Image Workspace.ARnc (“we,” “us,” “our,” or “the Website”). Your privacy is important to us. This Privacy Policy explains how information may be collected, used, processed, stored, and protected when you visit or use Image Workspace.ARnc.
-
-Image Workspace.ARnc is an online photo editing and image-processing platform designed to provide users with tools for editing, resizing, cropping, compressing, enhancing, converting, and processing images.
-
-By accessing or using Image Workspace.ARnc, you acknowledge that you have read and understood this Privacy Policy. If you do not agree with this Privacy Policy, please discontinue use of the Website.
-
----
-
-1. About This Privacy Policy
-
-This Privacy Policy explains:
-
-- What information may be collected from users
-- How uploaded images may be processed
-- How personal information may be used
-- How cookies and similar technologies may be used
-- How analytics information may be collected
-- How account and sign-in information may be handled
-- How third-party services may process information
-- How information may be protected
-- How long information may be retained
-- How privacy-related questions can be submitted
-
-Our goal is to provide clear information about how data may be handled while you use Image Workspace.ARnc.
-
----
-
-2. Using Image Workspace.ARnc
-
-Image Workspace.ARnc provides online image-processing and photo-editing tools. Depending on the features available on the Website, users may be able to upload images and perform different operations.
-
-These features may include:
-
-- Image resizing
-- Image cropping
-- Image compression
-- Image format conversion
-- Image quality adjustment
-- Brightness adjustment
-- Image rotation
-- Photo enhancement
-- Background-related tools
-- Image editing
-- Image downloading
-- Other image-processing features
-
-Features may be added, modified, removed, or updated over time.
-
----
-
-3. Information We May Collect
-
-Depending on how you use the Website, Image Workspace.ARnc may collect information directly from you or automatically through your browser or device.
-
-The type of information collected may vary depending on the features you use.
-
-Information may include:
-
-- Name
-- Email address
-- Account information
-- Sign-in information
-- User preferences
-- Device information
-- Browser information
-- Website usage information
-- Technical information
-- Uploaded files or images, where required for a requested service
-
-We aim to collect only information that is reasonably necessary for providing, maintaining, securing, and improving the Website and its services.
-
----
-
-4. Uploaded Images and Files
-
-Image Workspace.ARnc allows users to upload images for certain editing and processing functions.
-
-For example, you may upload a photograph to:
-
-- Resize the image
-- Crop the image
-- Compress the image
-- Convert the image into another format
-- Adjust image quality
-- Change brightness or other settings
-- Enhance the image
-- Perform other editing operations
-
-The image may be processed locally within your browser or may be transmitted to a server when a particular feature requires server-side processing.
-
-Our intention is to process uploaded images for the purpose requested by the user.
-
-Users should avoid uploading highly confidential, sensitive, or private images unless they understand how the specific feature processes uploaded files.
-
----
-
-5. Local and Server-Side Processing
-
-Some Image Workspace.ARnc features may process images directly within your browser or on your device. When processing occurs locally, the image may not need to be uploaded to a remote server for that particular operation.
-
-Other advanced features may require server-side processing.
-
-When server-side processing is required, an uploaded image may temporarily pass through or be stored within the processing infrastructure necessary to complete the requested operation.
-
-Temporary files may be deleted after processing where technically practical. However, we cannot guarantee immediate or permanent deletion in every situation because of technical systems, backups, logs, caching, or third-party infrastructure.
-
----
-
-6. Personal Information
-
-Certain features may require users to provide personal information.
-
-This may include information such as:
-
-- Name
-- Email address
-- Account details
-- Authentication information
-- Information voluntarily submitted through contact forms
-
-Personal information may be used to provide requested services, manage accounts, improve security, communicate with users when necessary, and maintain the Website.
-
-We do not intend to collect unnecessary personal information.
-
----
-
-7. Account and Sign-In Information
-
-If Image Workspace.ARnc provides account registration or sign-in functionality, users may be required to provide certain information to create or access an account.
-
-Account-related information may be used for:
-
-- User authentication
-- Account management
-- Sign-in functionality
-- Account security
-- Password recovery
-- Access to account-specific features
-- Prevention of unauthorized access
-
-Users are responsible for keeping their account credentials confidential.
-
-You should not share your password with other people. If you believe that someone has gained unauthorized access to your account, you should take appropriate steps to secure the account and contact us where applicable.
-
----
-
-8. Automatically Collected Technical Information
-
-When you visit Image Workspace.ARnc, certain technical information may be automatically collected by the Website, hosting provider, analytics services, security services, or other technical infrastructure.
-
-This information may include:
-
-- IP address
-- Browser type
-- Operating system
-- Device type
-- Screen information
-- Approximate usage information
-- Pages visited
-- Date and time of access
-- Referring website
-- Technical errors
-- General website interaction information
-
-This information may be used to operate, maintain, secure, analyze, and improve the Website.
-
----
-
-9. Cookies
-
-Image Workspace.ARnc may use cookies and similar technologies.
-
-Cookies are small pieces of information that websites may store in your browser.
-
-Cookies may be used for purposes such as:
-
-- Website functionality
-- Session management
-- Sign-in functionality
-- User preferences
-- Security
-- Analytics
-- Performance monitoring
-
-You may control or disable cookies through your browser settings.
-
-However, disabling certain cookies may cause some Website features to function incorrectly or become unavailable.
-
----
-
-10. Analytics
-
-Image Workspace.ARnc may use analytics services, such as Google Analytics, to understand how users interact with the Website.
-
-Analytics information may help us understand:
-
-- Website visits
-- Page views
-- Feature usage
-- Button interactions
-- General user behavior
-- Device and browser information
-- Traffic sources
-- Website performance
-
-This information can help us identify technical problems, understand which features are useful, and improve the overall user experience.
-
-Third-party analytics providers may have their own privacy policies and data-processing practices.
-
----
-
-11. Click and Event Tracking
-
-The Website may use event or interaction tracking to understand how users interact with different features.
-
-For example, tracking may record interactions with:
-
-- Upload buttons
-- Editing tools
-- Download buttons
-- Conversion tools
-- Navigation controls
-- Other Website features
-
-This type of information may be used to understand general Website usage and improve features.
-
-Where possible, analytics information should be interpreted as usage information rather than as a record of the actual contents of your private images.
-
----
-
-12. How We May Use Information
-
-Information collected through Image workspace.ARnc may be used for purposes including:
-
-1. Providing Website functionality.
-2. Processing images requested by users.
-3. Providing editing and conversion services.
-4. Managing user accounts.
-5. Providing sign-in and authentication functionality.
-6. Improving Website performance.
-7. Detecting and resolving technical problems.
-8. Protecting the Website against abuse and unauthorized activity.
-9. Understanding Website usage through analytics.
-10. Improving user experience.
-11. Maintaining Website security.
-12. Complying with applicable legal requirements.
-
-We aim to use information only for legitimate and relevant purposes connected with operating and improving the Website.
-
----
-
-13. Sharing of Information
-
-We do not intend to sell users' personal information.
-
-Information may, however, be processed by third-party service providers when their services are necessary to operate the Website.
-
-Depending on the Website's technical architecture, these providers may include:
-
-- Hosting providers
-- Cloud infrastructure providers
-- Analytics providers
-- Authentication providers
-- Image-processing services
-- Security providers
-- Technical service providers
-
-Third-party providers may process information according to their own privacy policies and applicable contractual or legal requirements.
-
----
-
-14. Legal Disclosure
-
-Information may be disclosed where required or permitted by applicable law.
-
-For example, information may be disclosed when necessary to:
-
-- Comply with a legal obligation
-- Respond to a valid legal request
-- Comply with a court order
-- Investigate fraud or abuse
-- Protect Website security
-- Protect users or other individuals
-- Protect legal rights
-
-We will seek to limit disclosures to what is reasonably necessary under the applicable circumstances.
-
----
-
-15. Data Security
-
-We take reasonable technical and organizational measures designed to protect information handled through Image Workspace.ARnc.
-
-Security measures may include appropriate access controls, secure communication technologies, authentication protections, and other safeguards depending on the Website's infrastructure.
-
-However, no internet-based service, electronic transmission, or storage system can be guaranteed to be completely secure.
-
-Therefore, while we work to protect information, we cannot guarantee absolute security.
-
----
-
-16. Data Retention
-
-Information may be retained for as long as reasonably necessary for the purposes described in this Privacy Policy, including:
-
-- Providing services
-- Maintaining accounts
-- Maintaining security
-- Troubleshooting
-- Analytics
-- Legal compliance
-- Maintaining technical records
-
-The retention period for uploaded images may depend on the specific feature and whether processing occurs locally or on a server.
-
-Temporary image files may be removed after processing where technically practical.
-
-However, copies may potentially remain for a limited period in backups, logs, caches, or other technical systems.
-
----
-
-17. User Responsibilities
-
-Users are responsible for the information and files they upload to Image workspace.ARnc
-
-You should:
-
-- Only upload images that you have the right to process.
-- Avoid uploading another person's private information without permission.
-- Protect your account credentials.
-- Avoid uploading extremely sensitive files unless necessary.
-- Use the Website in accordance with applicable laws.
-- Notify us of suspected security issues when appropriate.
-
-Image workspace.ARnc is not responsible for determining whether a user has the legal right to upload or process a particular image.
-
----
-
-18. Children's Privacy
-
-Image workspace.ARnc does not intentionally seek to collect personal information from children in violation of applicable law.
-
-If a parent or legal guardian believes that a child has provided personal information to the Website without appropriate authorization, they may contact us using the available contact method.
-
-Where legally required and technically possible, appropriate steps may be taken to address such information.
-
----
-
-19. Third-Party Websites and Links
-
-Image workspace.ARnc may contain links to external websites, services, or resources.
-
-When you visit an external website, that website's own privacy policy may apply.
-
-We do not control the privacy practices, security, policies, or content of third-party websites.
-
-Users should review the privacy policy of any external service before providing personal information or using that service.
-
----
-
-20. Advertising
-
-If advertisements are displayed on Image Workspace.ARnc, advertising providers may use cookies, pixels, or similar technologies in accordance with their applicable policies.
-
-Advertising-related technologies may be used for purposes such as:
-
-- Delivering advertisements
-- Measuring advertising performance
-- Understanding advertising interactions
-- Personalizing advertisements where permitted
-
-Advertising providers may have their own privacy policies and user controls.
-
----
-
-21. Changes to Website Features
-
-Image workspace.ARnc may introduce new tools and features in the future.
-
-These may include new image-editing tools, conversion services, account features, analytics systems, or other technologies.
-
-The way certain information is processed may therefore change as the Website develops.
-
-Where appropriate, this Privacy Policy may be updated to reflect significant changes.
-
----
-
-22. Changes to This Privacy Policy
-
-We may update or revise this Privacy Policy from time to time.
-
-When changes are made, the updated policy may be published on this page.
-
-The “Last Updated” date at the beginning of this Privacy Policy indicates when the policy was most recently revised.
-
-Users are encouraged to review this page periodically.
-
----
-
-23. Your Privacy Choices
-
-Depending on applicable law and the features available on the Website, you may have certain choices regarding your personal information.
-
-These may include choices related to:
-
-- Cookies
-- Analytics
-- Account information
-- Communication preferences
-- Personal information submitted through contact forms
-
-Some choices may be controlled through your browser, device, account settings, or third-party service settings.
-
-Where applicable law provides additional privacy rights, users may contact us to request information about exercising those rights.
-
----
-
-24. Sensitive Images and Personal Documents
-
-Image workspace.ARnc may allow users to process photographs and documents.
-
-Users should exercise particular caution when uploading:
-
-- Government identity documents
-- Financial documents
-- Private family photographs
-- Confidential business documents
-- Personal identification information
-- Other highly sensitive content
-
-Before uploading sensitive material, users should understand whether the specific tool performs processing locally or through a server-based service.
-
-No online service can guarantee zero risk, so users should consider the sensitivity of an image before uploading it.
-
----
-
-25. Contact Us
-
-If you have questions, concerns, or requests regarding this Privacy Policy or the handling of information by Image Workspace.ARnc, please use the official Contact Us method provided on the Website.
-
-Website Name: Image workspace.ARnc
-
-Privacy Contact: Use the official contact method available on the Image Workspace.ARnc Website.
-
----
-
-26. Important Privacy Notice
-
-Different tools on Image workspace.ARnc may use different technical processing methods.
-
-Some tools may process images directly in your browser, while other tools may require server-side or third-party processing.
-
-Because of these differences, users should review the relevant information provided with a particular feature before uploading highly confidential or sensitive content.
-
-We take reasonable steps to protect information and provide a privacy-conscious service, but we cannot guarantee that internet-based services will always be completely secure or that every temporary copy of data will be immediately removed.
-
----
-
-27. Final Statement
-
-Image workspace.ARnc respects the privacy of its users and aims to handle information responsibly.
-
-Our goal is to use information primarily for providing requested image-processing services, operating the Website, maintaining security, understanding Website usage, and improving the overall service.
-
-By using Image Workspace.ARnc, you acknowledge that you have read and understood this Privacy Policy.
-
-If you do not agree with the practices described here, please discontinue using the Website.
-
-We recommend reviewing this Privacy Policy periodically because our Website, features, technologies, and services may change over time.
-
-____
-
-Contact us:
-Website: Image workspace.ARnc
-Privacy / Support Email: subham99209114@gmail.com
-Contact no: 7544095688
-
-© 2026 Image workspace.ARnc All Rights Reserved. </p>
- </section> 
-</footer>
-
 
 <script>
 (() => {
@@ -1081,6 +617,82 @@ function exportCurrent(){
   let base=im.name.replace(/\.[^.]+$/,'')||'image';if($('includeDate').checked)base+='_'+new Date().toISOString().replace(/[:.]/g,'-');
   downloadCanvas(base+'.'+ext,type,q);status('Export complete')
 }
+function blobFromCanvas(targetCanvas,type,quality){
+  return new Promise(resolve=>targetCanvas.toBlob(resolve,type,quality));
+}
+function safeFileBase(name){return (String(name||'image').replace(/\.[^.]+$/,'').replace(/[\\/:*?"<>|]+/g,'_').trim()||'image').slice(0,120)}
+function downloadBlob(blob,name){
+  if(!blob){toast('Export failed');return false}
+  const a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2500);return true
+}
+async function canvasToJpegData(canvasEl,quality=.92){
+  const blob=await blobFromCanvas(canvasEl,'image/jpeg',quality);
+  if(!blob)return null;
+  return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(blob)})
+}
+async function exportCurrentPDF(){
+  const im=active();if(!im){toast('Add an image first');return}
+  if(!window.jspdf||!window.jspdf.jsPDF){toast('PDF library could not be loaded');return}
+  try{
+    const data=await canvasToJpegData(canvas,.95);if(!data){toast('Could not prepare PDF');return}
+    const w=canvas.width,h=canvas.height;
+    const landscape=w>h;const doc=new window.jspdf.jsPDF({orientation:landscape?'landscape':'portrait',unit:'pt',format:'a4',compress:true});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),margin=24;
+    const scale=Math.min((pw-margin*2)/w,(ph-margin*2)/h),dw=w*scale,dh=h*scale;
+    doc.addImage(data,'JPEG',(pw-dw)/2,(ph-dh)/2,dw,dh,undefined,'FAST');
+    doc.save(safeFileBase(im.name)+'_edited.pdf');status('PDF export complete');toast('PDF downloaded')
+  }catch(err){console.error(err);toast('PDF export failed')}
+}
+async function exportAllPDF(){
+  if(!state.images.length){toast('Add images first');return}
+  if(!window.jspdf||!window.jspdf.jsPDF){toast('PDF library could not be loaded');return}
+  try{
+    const previous=state.active;let doc=null;
+    for(let i=0;i<state.images.length;i++){
+      selectImage(i);await new Promise(r=>setTimeout(r,10));
+      const data=await canvasToJpegData(canvas,.95);if(!data)continue;
+      const w=canvas.width,h=canvas.height,landscape=w>h;
+      if(!doc)doc=new window.jspdf.jsPDF({orientation:landscape?'landscape':'portrait',unit:'pt',format:'a4',compress:true});
+      else doc.addPage('a4',landscape?'landscape':'portrait');
+      const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),margin=24,scale=Math.min((pw-margin*2)/w,(ph-margin*2)/h),dw=w*scale,dh=h*scale;
+      doc.addImage(data,'JPEG',(pw-dw)/2,(ph-dh)/2,dw,dh,undefined,'FAST');
+    }
+    if(doc){doc.save('ResizeImage_ARnc_All_Images.pdf');status('PDF export complete');toast('All images PDF downloaded')}else toast('Could not create PDF');
+    if(state.images[previous])selectImage(previous);
+  }catch(err){console.error(err);toast('PDF export failed')}
+}
+function crc32(bytes){
+  let c=0xffffffff;
+  for(let i=0;i<bytes.length;i++){c^=bytes[i];for(let k=0;k<8;k++)c=(c>>>1)^((c&1)?0xedb88320:0)}
+  return (c^0xffffffff)>>>0;
+}
+function u16(n){return new Uint8Array([n&255,(n>>>8)&255])}
+function u32(n){return new Uint8Array([n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255])}
+function joinBytes(parts){let len=0;for(const p of parts)len+=p.length;const out=new Uint8Array(len);let o=0;for(const p of parts){out.set(p,o);o+=p.length}return out}
+async function createZip(files){
+  const enc=new TextEncoder(),local=[],central=[];let offset=0;
+  for(const file of files){
+    const name=enc.encode(file.name),data=new Uint8Array(await file.blob.arrayBuffer()),crc=crc32(data);
+    const head=joinBytes([new Uint8Array([80,75,3,4]),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),name,data]);
+    local.push(head);
+    const cent=joinBytes([new Uint8Array([80,75,1,2]),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset),name]);
+    central.push(cent);offset+=head.length;
+  }
+  const body=joinBytes(local),cd=joinBytes(central),end=joinBytes([new Uint8Array([80,75,5,6]),u16(0),u16(0),u16(files.length),u16(files.length),u32(cd.length),u32(body.length),u16(0)]);
+  return new Blob([body,cd,end],{type:'application/zip'});
+}
+async function exportAllZIP(){
+  if(!state.images.length){toast('Add images first');return}
+  try{
+    const type=$('batchFormat').value,q=+$('batchQuality').value/100,ext=type==='image/png'?'png':type==='image/webp'?'webp':'jpg';
+    const previous=state.active,files=[];
+    for(let i=0;i<state.images.length;i++){selectImage(i);await new Promise(r=>setTimeout(r,10));const blob=await blobFromCanvas(canvas,type,q);if(blob)files.push({name:safeFileBase(state.images[i].name)+'_edited.'+ext,blob})}
+    if(state.images[previous])selectImage(previous);
+    if(!files.length){toast('Could not create ZIP');return}
+    const zip=await createZip(files);downloadBlob(zip,'ResizeImage_ARnc_All_Images.zip');status('ZIP export complete');toast('ZIP downloaded')
+  }catch(err){console.error(err);toast('ZIP export failed')}
+}
+
 function crop(x,y,w,h){
   const sx=Math.max(0,Math.min(canvas.width-1,x)),sy=Math.max(0,Math.min(canvas.height-1,y));
   const sw=Math.max(1,Math.min(canvas.width-sx,w)),sh=Math.max(1,Math.min(canvas.height-sy,h));
@@ -1172,13 +784,102 @@ function drawPointer(e){
 }
 function startDraw(e){if(state.cropMode)return;if(!state.drawMode||!active())return;state.drawing=true;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*(canvas.width/r.width),y=(e.clientY-r.top)*(canvas.height/r.height);state.start=state.last={x,y};pushHistory('Before drawing')}
 function endDraw(){if(!state.drawing)return;state.drawing=false;syncImageFromCanvas();pushHistory('Drawing')}
+function projectPayload(){
+  /* Save the actual current image data. The active canvas is authoritative
+     because some edits update the canvas before the Image object callback finishes. */
+  const activeIndex=state.active;
+  const items=state.images.map((x,i)=>{
+    let src=x.src;
+    let w=x.w||0,h=x.h||0;
+    if(i===activeIndex && canvas.width && canvas.height){
+      try{src=canvas.toDataURL('image/png');w=canvas.width;h=canvas.height}catch(err){console.warn('Could not snapshot active canvas',err)}
+    }
+    return {name:x.name,src,size:x.size,w,h,original:x.original||src};
+  });
+  return {version:4,name:'ResizeImage.ARnc Advanced Project',active:activeIndex,images:items};
+}
+async function loadProjectData(p,silent=false){
+  if(!p||!Array.isArray(p.images))throw new Error('Invalid project data');
+  const loaded=[];
+  for(const x of p.images){
+    if(!x)continue;
+    const candidates=[];
+    if(typeof x.src==='string'&&/^data:image\//i.test(x.src))candidates.push(x.src);
+    if(typeof x.original==='string'&&/^data:image\//i.test(x.original)&&!candidates.includes(x.original))candidates.push(x.original);
+    if(!candidates.length)continue;
+    let im=null;
+    for(const src of candidates){
+      try{
+        const test=new Image();
+        test.decoding='async';
+        await new Promise((resolve,reject)=>{
+          test.onload=resolve;
+          test.onerror=()=>reject(new Error('Image could not be decoded'));
+          test.src=src;
+          if(test.complete&&test.naturalWidth)resolve();
+        });
+        if(test.naturalWidth>0&&test.naturalHeight>0){im=test;break}
+      }catch(err){console.warn('Project image candidate failed',x.name,err)}
+    }
+    if(!im)continue;
+    loaded.push({name:x.name||'image',size:x.size||0,src:im.src,w:im.naturalWidth,h:im.naturalHeight,img:im,original:(typeof x.original==='string'&&/^data:image\//i.test(x.original))?x.original:im.src});
+  }
+  state.images=loaded;
+  state.active=loaded.length?Math.max(0,Math.min(Number.isFinite(+p.active)?Math.floor(+p.active):0,loaded.length-1)):0;
+  if(loaded.length){
+    selectImage(state.active);
+    if(!silent)status('Project loaded');
+  }else{
+    state.active=0;
+    updateUI();
+    if(!silent)status('Project contains no readable images');
+  }
+}
+window.__ARncLoadProjectData=loadProjectData;
+async function loadProject(file){
+  try{
+    const text=await file.text();
+    let p=null;
+    try{p=JSON.parse(text)}catch{
+      const doc=new DOMParser().parseFromString(text,'text/html');
+      const node=doc.getElementById('arncEmbeddedProject');
+      if(node)p=JSON.parse(node.textContent||'{}');
+    }
+    await loadProjectData(p);
+    toast('Project loaded');
+  }catch(err){console.error(err);toast('Invalid project file')}
+}
 function saveProject(){
   if(!active()){toast('Add an image first');return}
-  const project={version:1,name:'ResizeImage.ARnc Advanced Project',active:state.active,images:state.images.map(x=>({name:x.name,src:x.src,size:x.size,w:x.w,h:x.h,original:x.original}))};
-  const blob=new Blob([JSON.stringify(project)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ResizeImage_ARnc_Project.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);toast('Project saved')
-}
-async function loadProject(file){
-  try{const p=JSON.parse(await file.text());state.images=[];for(const x of p.images||[]){const im=new Image();im.src=x.src;await new Promise(r=>im.onload=r);state.images.push({...x,img:im})}state.active=Math.min(p.active||0,state.images.length-1);if(state.images.length)selectImage(state.active);toast('Project loaded')}catch{toast('Invalid project file')}
+  try{
+    const project=projectPayload();
+    const safe=JSON.stringify(project)
+      .replace(/&/g,'\\u0026')
+      .replace(/</g,'\\u003c')
+      .replace(/>/g,'\\u003e')
+      .replace(/\u2028/g,'\\u2028')
+      .replace(/\u2029/g,'\\u2029');
+
+    let source='<!doctype html>\n'+document.documentElement.outerHTML;
+    source=source
+      .replace(/<script[^>]*id=["']arncEmbeddedProject["'][^>]*>[\s\S]*?<\/script>/gi,'')
+      .replace(/<script[^>]*id=["']arncProjectBoot["'][^>]*>[\s\S]*?<\/script>/gi,'');
+
+    /* Build the two project blocks without putting a literal closing script
+       tag inside this JavaScript source. This prevents the browser HTML parser
+       from cutting the main application script in half. */
+    const embedded='\x3cscript id="arncEmbeddedProject" type="application/json">'+safe+'\x3c\/script>';
+    const boot='\x3cscript id="arncProjectBoot">(function(){function read(){try{var n=document.getElementById("arncEmbeddedProject");if(!n)return;var p=JSON.parse(n.textContent||"{}");if(window.__ARncLoadProjectData){window.__ARncLoadProjectData(p,true).catch(function(e){console.error(e);});}}catch(e){console.error("ARnc project restore failed",e);}}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",read,{once:true});else setTimeout(read,0);})();\x3c\/script>';
+    source=source.replace(/<\/body>/i,embedded+boot+'\x3c/body>');
+
+    const blob=new Blob([source],{type:'text/html;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='ResizeImage_ARnc_Project.html';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+    toast('Project saved — open the HTML project file to restore it');
+  }catch(err){console.error(err);toast('Could not save project')}
 }
 function removeImage(i){state.images.splice(i,1);if(state.active>=state.images.length)state.active=Math.max(0,state.images.length-1);if(state.images.length)selectImage(state.active);else{state.active=0;updateUI()}}
 function duplicate(){const im=active();if(!im)return;state.images.splice(state.active+1,0,{...im,name:im.name.replace(/(\.[^.]+)?$/,'_copy$1')});selectImage(state.active+1)}
@@ -1264,9 +965,9 @@ $('hInput').oninput=()=>{if($('lockRatio').checked)$('wInput').value=Math.max(1,
 ['drawMode','eraserMode','lineMode','rectMode','circleMode'].forEach(id=>$(id).onclick=()=>{state.drawMode={drawMode:'brush',eraserMode:'eraser',lineMode:'line',rectMode:'rect',circleMode:'circle'}[id];toast('Tool: '+state.drawMode)});
 canvas.addEventListener('pointerdown',startDraw);canvas.addEventListener('pointermove',drawPointer);window.addEventListener('pointerup',endDraw);
 $('clearMarks').onclick=clearMarks;$('fillBg').onclick=()=>setBg($('bgColor').value);$('transparentBg').onclick=()=>setBg('',true);$('applyBorder').onclick=applyBorder;
-$('quality').oninput=e=>$('qualityV').textContent=e.target.value+'%';$('downloadCurrent').onclick=exportCurrent;$('exportBtn').onclick=exportCurrent;
+$('quality').oninput=e=>$('qualityV').textContent=e.target.value+'%';$('downloadCurrent').onclick=exportCurrent;$('exportBtn').onclick=exportCurrent;$('pdfCurrentBtn').onclick=exportCurrentPDF;$('pdfAllBtn').onclick=exportAllPDF;$('zipAllBtn').onclick=exportAllZIP;
 $('compareBtn').onclick=()=>{if(!active()){toast('Add an image first');return}$('beforeImg').src=active().original;$('afterImg').src=canvas.toDataURL('image/png');$('compareModal').classList.add('show')};$('closeCompare').onclick=()=>$('compareModal').classList.remove('show');
-$('saveProjectBtn').onclick=saveProject;$('loadProjectBtn').onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=()=>i.files[0]&&loadProject(i.files[0]);i.click()};
+$('saveProjectBtn').onclick=saveProject;$('loadProjectBtn').onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='.html,.json,text/html,application/json';i.onchange=()=>i.files[0]&&loadProject(i.files[0]);i.click()};
 $('fullscreenBtn').onclick=async()=>{try{if(document.fullscreenElement){await document.exitFullscreen()}else if($('canvasWrap').requestFullscreen){await $('canvasWrap').requestFullscreen()}else toast('Fullscreen not supported')}catch{toast('Fullscreen is blocked by the browser')}};
 $('fitBtn').onclick=()=>{state.zoom=1;$('mainCanvas').style.width='100%';$('mainCanvas').style.maxWidth='100%';updateUI()};$('actualBtn').onclick=()=>{state.zoom=1;$('mainCanvas').style.width='auto';$('mainCanvas').style.maxWidth='none';updateUI()};
 $('batchExport').onclick=async()=>{
@@ -1356,5 +1057,30 @@ $('qualityScanBtn').onclick=()=>{if(!active()){toast('Add an image first');retur
 updateUI();renderHistory();
 })();
 </script>
+
+<footer class="site-footer" aria-label="Website information and privacy">
+  <div class="site-footer-inner">
+    <div class="site-footer-intro">
+      <h2>Image Workspace.ARnc</h2>
+      <p>Advanced Professional Studio • Local-first browser image editing, practical tools, batch workflows, enhancement, comparison and export.</p>
+    </div>
+    <div class="site-footer-grid">
+      <section class="site-footer-column"><h2>About Image Workspace.ARnc</h2><article><h3>1. Welcome to Image Workspace.ARnc</h3><p>Image Workspace.ARnc is an advanced browser-based image editing workspace designed for people who want practical image tools without depending on a complicated desktop application. The workspace brings common image editing tasks into one place, including resizing, cropping, adjustments, filters, text and watermarking, drawing, background handling, batch work, export, project history, and local enhancement tools. The interface is organized as a professional studio so that users can move between tools without repeatedly opening different websites. The purpose of the project is to make everyday image preparation easier while keeping the workflow understandable. Whether you are preparing an image for a social post, document, website, presentation, print project, or personal archive, the workspace provides a collection of controls that can be used directly in the browser.</p></article><article><h3>2. A Browser-Based Image Workspace</h3><p>The website works as an image workspace inside a modern web browser. You can add one or several images and then work with the selected image through the available editor panels. The central canvas is used for visual editing, while the side panels organize settings and actions. This arrangement is intended to reduce unnecessary navigation and keep important controls close to the image being edited. Because the application is delivered through a web page, users do not need to install a traditional desktop image editor simply to perform common tasks. The experience is especially useful for quick jobs where opening a full professional graphics application would take more time than the actual edit. Browser support, device memory, and image size can affect performance.</p></article><article><h3>3. Resize Images with Practical Controls</h3><p>One of the main purposes of Image Workspace.ARnc is image resizing. The workspace provides width and height controls, an option to preserve the original aspect ratio, percentage resizing, target megapixel resizing, maximum dimensions, long-edge resizing, and several resize modes. These controls allow a user to prepare an image for different destinations without manually calculating every dimension. The resize modes include width-based, height-based, percentage-based, longest-side, shortest-side, fit, fill with crop, and exact stretch behavior. Presets are also provided for frequently used dimensions such as square, portrait, HD, story, passport-style, and video-oriented sizes. The goal is flexibility: users can choose a simple method for routine resizing or a more specific method when exact output dimensions matter.</p></article><article><h3>4. Crop and Transform Tools</h3><p>Cropping is an important part of preparing an image because the most useful composition is not always the same as the original photograph. The workspace includes crop presets and an interactive drag crop interface. A user can move a crop selection, resize it using visible handles, choose free cropping, or work with common ratios such as square, four-to-five, sixteen-to-nine, and nine-to-sixteen. Additional transformation controls include rotation and horizontal or vertical flipping. The visual crop overlay is designed to make the selected area easier to understand before applying the operation. The application also keeps an undo history so that an edit can be reversed when the result is not what the user expected.</p></article><article><h3>5. Professional Adjustments</h3><p>Image Workspace.ARnc includes adjustment controls for brightness, contrast, saturation, exposure, warmth, blur, sharpness, and vignette. These controls are intended for practical image correction rather than replacing a complete color-grading suite. Small adjustments can help improve readability, balance, or overall appearance before export. The interface shows values alongside sliders so that users can understand the approximate strength of each setting. Filters and custom color controls provide another route for changing the visual character of an image. Since the processing occurs in the browser, the actual result can depend on the source image, browser rendering behavior, available memory, and the selected output format and quality. Users should review the final canvas before downloading important files.</p></article><article><h3>6. Text, Watermarks, Drawing and Shapes</h3><p>The workspace can also be used for simple graphic annotation. Text can be entered, sized, colored, and placed in the image, while a watermark action provides a convenient way to add identifying text. Drawing tools include a brush, eraser, line, rectangle, and circle, with controls for brush size and color. These features are useful when an image needs a quick label, highlight, mark, signature-style note, or basic visual annotation. The editing approach is intentionally straightforward. Once a drawing or text operation is committed to the canvas, it becomes part of the current image state, while the history system provides a way to undo earlier changes. Users should keep an original copy when the source image may need to be preserved independently.</p></article><article><h3>7. Background Controls</h3><p>The Background panel provides simple options for filling or making a detected background transparent and for adding a border. The background tools are designed for images where the surrounding area is relatively plain or uniform. The website itself explains that connected background colors are detected from image corners, which means complex photographs, gradients, shadows, hair, transparent objects, and busy scenes may not produce the same result as a specialized segmentation system. This distinction is important because a browser-based color-detection approach should not be confused with a dedicated professional background-removal model. Users can inspect the result on the canvas and use undo or another editing step if the outcome is not suitable.</p></article><article><h3>8. Smart Clean and Local Enhancement</h3><p>The Smart Clean area provides browser-based enhancement controls for images that may appear soft, noisy, dark, or lacking contrast. The project describes these tools as Remini-style or screenshot-inspired, but the interface also clearly states that the feature is not the proprietary Remini neural model. The controls use local pixel processing and include denoise, detail and sharpening, clarity, light recovery, color correction, face-safe detail, background depth, dehaze, texture recovery, and JPEG artifact cleanup. Presets are available for portrait, low-light, old-photo, document, color-boost, and extra-detail workflows. These tools can improve pixels already present in the source, but they cannot reliably recreate information that was never captured in the original image.</p></article><article><h3>9. Before and After Comparison</h3><p>Comparing an original image with a processed version is useful because an edit can sometimes look impressive at one zoom level while introducing unwanted changes elsewhere. Image Workspace.ARnc includes a Before / After workflow and a slider-based comparison in the Smart Clean area. The comparison interface allows the user to inspect how much of the original image has changed. This is particularly useful when applying sharpening, denoising, color correction, or other enhancement settings. A visual comparison does not guarantee technical quality, so important images should also be checked for dimensions, format, compression, and other output requirements. The comparison feature is therefore intended as a practical review step before the final export rather than as a replacement for careful inspection.</p></article><article><h3>10. Batch Workspace</h3><p>When several images need similar treatment, repeating the same export process individually can be inconvenient. The Batch Workspace provides a place to review loaded image thumbnails and apply common output format and quality settings to all loaded images. Batch processing is useful for collections such as product photographs, scanned documents, social-media images, or a group of pictures that must be converted into a consistent format. The exact result can still vary between images because each source may have different dimensions, transparency, colors, and content. Users should review representative outputs before processing a large collection. The batch workflow is designed to save time while keeping the same general editor and export concepts available for individual images.</p></article><article><h3>11. Export and Output Formats</h3><p>The Professional Export panel provides JPG or JPEG, PNG, and WEBP output options together with a quality control. The appropriate format depends on the purpose of the image. JPEG is commonly useful when smaller files and photographic content are important, PNG can be useful when lossless output or transparency is required, and WEBP can provide a modern web-oriented alternative. Quality settings affect the final result and file size, particularly for lossy formats. The website allows users to choose the output settings rather than silently deciding for them. Before using an exported file for a formal submission, printing process, website upload, or archive, users should confirm that the receiving service accepts the selected format and dimensions.</p></article><article><h3>12. Print Size and DPI</h3><p>The Print Size section provides width and height controls in inches or centimeters together with DPI choices. This is useful when an image needs to be prepared around a physical print dimension. DPI is often discussed as if it alone determines image quality, but the available pixel dimensions are also important. A larger physical size at a particular DPI requires more pixels than a smaller print at the same DPI. The workspace therefore combines print dimensions and DPI to calculate an output pixel size. The result should still be checked against the actual printer, publishing service, or document requirements. Different services can have their own preferred resolution, color profile, file format, and maximum size rules.</p></article><article><h3>13. Themes and Interface</h3><p>The application includes several theme options including dark, light, green, purple, ocean, and sunset. These themes are intended to change the visual color scheme while keeping the editor tools and general layout available. The main interface uses a workspace layout with a top action bar, left navigation area, central canvas, and right-side controls. On smaller screens the layout adapts into a mobile-friendly vertical arrangement. The purpose of the responsive design is to make the same editing concepts available across different screen sizes. Device-specific browser behavior can still affect how controls, file pickers, touch gestures, memory use, and downloads behave, so users should test important workflows on the device where the final work will be used.</p></article><article><h3>14. Local-First Processing</h3><p>A central design idea of Image Workspace.ARnc is local-first processing. The interface states that images are processed in the browser and that an upload server is not required by the studio. Many operations are performed through browser APIs and the HTML canvas. This approach can reduce the need to send the actual image to a remote image-processing service for ordinary editing tasks. It also means that the browser and device become responsible for processing work. Large images, multiple images, and intensive operations may use significant memory. If a browser tab becomes unstable or a device runs out of resources, an operation may fail. Keeping important originals stored safely outside the browser remains a sensible practice.</p></article><article><h3>15. Project and History Features</h3><p>The workspace contains project and history controls intended to make editing sessions easier to manage. The history panel records edit states and provides undo and redo functionality for supported operations. Project controls also expose Save Project and Load Project actions. These features are intended to support an iterative workflow in which a user can experiment with an image and return to an earlier state. Browser-based project behavior can depend on the implementation and available browser storage or file handling capabilities. Users should not assume that an unsaved browser session is a permanent archive. For important projects, exporting the required image and keeping the source file in a normal storage location provides an additional layer of protection.</p></article><article><h3>16. Responsible Use of Image Tools</h3><p>Image editing tools can be used for creative, educational, commercial, and personal purposes. Users are responsible for ensuring that they have appropriate rights to edit and publish images they use. The website does not automatically determine whether a user owns an image, has permission to modify it, or is allowed to distribute the resulting file. Users should respect copyright, privacy, trademarks, publicity rights, and applicable laws. When images contain people, documents, identification information, addresses, or other sensitive material, users should consider whether editing or sharing the result is appropriate. The tools are provided to help with image processing; responsibility for the source material and the final use remains with the person using the application.</p></article><article><h3>17. Performance and Browser Compatibility</h3><p>Because Image Workspace.ARnc operates in a browser, performance depends on the browser, operating system, device processor, available memory, screen size, and source-image complexity. Very large photographs can require more memory than small web images. Loading many images at once can also increase resource use. Modern browsers are generally better suited to canvas-based applications, but exact behavior can differ between browser versions and devices. If an operation appears slow, reducing image dimensions, processing fewer images at one time, closing unnecessary tabs, or using a more capable device may help. Browser extensions, privacy settings, content blockers, and restrictive security policies can also affect external resources or certain browser features used by a website.</p></article><article><h3>18. Security-Oriented Design Choices</h3><p>The workspace includes security-oriented interface notes and a privacy export option. Its canvas-based export is designed so that the generated output does not intentionally preserve the original EXIF or GPS metadata. This can be useful when a user wants a processed copy without common embedded location information from the original file. However, metadata handling should always be checked according to the exact file and workflow because different applications can add information later. The website should not be treated as a complete information-security system. Users remain responsible for protecting their original files, browser environment, device, accounts, and exported copies. The safest workflow for sensitive material is to understand where every file is stored and where it will be shared.</p></article><article><h3>19. A Practical Workflow</h3><p>A typical workflow can begin by adding one or more images, selecting an image, checking its dimensions, and deciding what the final output should be. The user can then crop or resize, make adjustments, apply a filter or annotation if needed, review the result, and open the export panel. For multiple images, common batch output settings can be selected after the images are loaded. For enhancement tasks, Smart Clean can be previewed and compared before committing changes. After exporting, the resulting file should be opened once to confirm that the dimensions, format, quality, transparency, and visual appearance are correct. This review step is especially useful when the file is intended for a website, print submission, application form, or other system with strict requirements.</p></article><article><h3>20. Our Approach to Simplicity</h3><p>The project aims to combine a broad collection of image tasks without turning every operation into a complicated workflow. A person who only needs to resize an image can use the basic resize controls, while another user can explore advanced resize modes, print sizing, filters, drawing, crop ratios, Smart Clean, batch export, and project history. This layered approach allows the same workspace to serve different levels of editing needs. The interface is designed around recognizable labels and direct controls rather than requiring users to learn a specialized editing language. At the same time, advanced tools have limitations, and users should treat automatic enhancement, background processing, and compression as practical assistance rather than a guarantee of professional studio output.</p></article><article><h3>21. Continuous Improvement</h3><p>Image Workspace.ARnc can evolve as browser capabilities, image formats, performance techniques, and user requirements change. Improvements may include better compatibility, clearer controls, more reliable processing, stronger accessibility, improved error handling, and additional export options. Changes should be evaluated carefully because browser-based image processing can be affected by implementation details and device differences. Users who encounter a problem should record the browser, device type, image format, approximate image dimensions, and the action that caused the issue. This information can make troubleshooting more useful than a general statement that an image did not work. The goal of ongoing improvement is to make the existing workspace more reliable while preserving the straightforward editing workflow that users already understand.</p></article><article><h3>22. What the Website Is Not</h3><p>Image Workspace.ARnc is not presented as a replacement for every professional imaging application, cloud storage system, forensic image tool, or dedicated artificial-intelligence model. Some features use straightforward browser image processing rather than a large remote neural network. Some operations may therefore produce different results from specialized commercial software. The website also does not promise that every input file, browser, or device will behave identically. Users should select tools according to the actual task and verify important results. Clear expectations are part of a useful editing workflow: the application can perform many common operations efficiently, but it should not be relied upon as the sole system for critical archival, legal, scientific, or production requirements without independent verification.</p></article><article><h3>23. Accessibility and User Control</h3><p>The interface is designed around visible labels, buttons, sliders, panels, and direct controls so that users can understand what action they are taking. Responsive layout rules allow the workspace to adapt to smaller displays, while touch-aware crop behavior supports interactive editing on compatible devices. Accessibility can still vary depending on browser support, device settings, input method, and future changes. Users who depend on keyboard navigation, screen readers, high-contrast settings, or other assistive technologies should verify that the current version meets their individual needs. Providing users with direct control over image dimensions, output format, quality, and editing choices is an important part of the project philosophy: the website assists the workflow rather than silently deciding every output.</p></article><article><h3>24. Closing Note</h3><p>Image Workspace.ARnc is built around a simple idea: useful image editing should be available in a focused workspace with practical controls, understandable output options, and a local-first approach. The application brings resizing, cropping, adjustment, filters, annotation, drawing, background controls, enhancement, batch processing, comparison, themes, history, and export into one interface. The most important part of any workflow remains the user’s review of the source and final file. Use the original file as the reference, choose settings according to the destination, inspect the exported result, and keep backups of important work. We hope the workspace makes everyday image preparation faster and more convenient while giving users enough control to understand what is happening to their images.</p></article><article><h3>25. Designed for Everyday Image Work</h3><p>The editor is intended to be useful across many ordinary image tasks without requiring a separate application for every small job. A user may need to reduce a photograph for a website, create a fixed-size image for an online form, prepare a social-media crop, add a watermark, make a quick correction, convert an image format, or process several files with similar export settings. Instead of treating each task as a separate product, Image Workspace.ARnc places them inside one workspace. The central canvas gives immediate visual feedback while the surrounding panels organize detailed controls. This structure is meant to help users move from source image to reviewed output in a consistent way. The website remains a tool for image preparation, and the final responsibility for checking quality, rights, accuracy, and appropriate use remains with the user.</p></article><article><h3>26. A Clear Editing Philosophy</h3><p>The project follows a practical philosophy: make common image operations accessible, keep controls visible, provide meaningful output choices, and avoid unnecessary complexity. The result is a workspace that can be used for quick edits while still offering advanced controls for users who need them. Every final image should be reviewed before it is trusted for an important purpose.</p></article><article><h3>27. Final User Check</h3><p>Always inspect the exported image. Confirm that output matches intended size, format, quality, composition, and result.</p></article></section>
+      <section class="site-footer-column"><h2>Privacy Policy</h2><article><h3>1. Privacy at Image Workspace.ARnc</h3><p>This Privacy Policy explains the privacy-oriented behavior of Image Workspace.ARnc and describes how the website handles information when you use its image-editing features. The application is designed with a local-first approach, and its interface states that images are processed in the browser and that an upload server is not required by the studio. This means ordinary image editing is intended to happen on your device rather than through a dedicated image-upload backend. This policy should be read together with the actual behavior of the browser, the hosting environment, third-party resources, and any services you choose to use alongside the website. Because websites can change over time, users should review the current version of the policy and the current interface before relying on a specific privacy behavior.</p></article><article><h3>2. Image Processing</h3><p>For the editor operations described in the workspace, images are loaded into the browser and represented through browser image and canvas capabilities. Resizing, cropping, adjustments, filters, drawing, text, background operations, comparison, and many Smart Clean operations are performed through client-side processing. The website does not require an image-upload server for these editor functions. This local-first model means that the image data used for editing is handled by the browser session on the user’s device. However, a local-first design does not mean that every network request made by the page is automatically eliminated. The page may load scripts, fonts, libraries, analytics, or other resources depending on the version and hosting configuration. Users should therefore distinguish image processing from general website network activity.</p></article><article><h3>3. No Ordinary Image Upload Server</h3><p>The interface explicitly tells users that images are processed in the browser and that no upload server is required by the studio. This is an important privacy characteristic because an ordinary editing workflow does not need to send the selected image to a remote image-processing endpoint simply to resize or crop it. Files are selected through the browser file picker and read for local processing. If you are working with sensitive material, you should still remember that the browser, operating system, backups, browser extensions, and other software on your device can have access to files independently of this website. Local processing reduces one category of transmission, but it does not replace general device security practices such as screen protection, account security, software updates, and careful file storage.</p></article><article><h3>4. Browser Storage and Session Data</h3><p>A browser application can maintain temporary information in memory while a page is open. Image Workspace.ARnc maintains editor state, image information, canvas data, history information, and interface state during the editing session. The exact lifetime of this information can depend on how the page is implemented and how the browser handles the tab or session. Users should not treat the browser tab as a permanent backup location. If an image or project is important, save the original and final files to a trusted storage location. Closing a tab, refreshing a page, clearing browser data, or encountering a browser failure can affect unsaved work. Local processing should therefore be understood as a processing method, not as a promise of permanent local storage.</p></article><article><h3>5. Exported Images and Metadata</h3><p>The Professional Export area includes a privacy-oriented export option and states that canvas-based export intentionally does not preserve original EXIF or GPS metadata. This can reduce the chance that common location or camera metadata from an original image is carried into a newly generated canvas export. The behavior is relevant when users want to share a processed image without the original metadata. It is still important to inspect the final file when privacy is critical because another application, platform, or workflow may add metadata later. File names can also reveal information even when embedded metadata has been removed. Users should therefore review both the file contents and the filename before publishing or sending sensitive images.</p></article><article><h3>6. Google Analytics and Website Measurement</h3><p>The supplied website code includes the Google Analytics gtag script and a Google Analytics measurement configuration. This means that website analytics may be used to understand activity on the site, depending on how the deployed page, consent settings, browser configuration, and analytics service operate. Analytics is different from the local image-processing workflow: an analytics request does not mean that the edited image itself is uploaded to the image editor server. Users who want to understand current analytics collection should also review the applicable Google documentation and the privacy controls available in their browser or region. The site owner should configure analytics in accordance with applicable law and the requirements of the deployment environment.</p></article><article><h3>7. Information You Choose to Provide</h3><p>The editor itself does not require a user account simply to open an image and perform ordinary editing tasks shown in the interface. If a user voluntarily provides information through another service, feedback channel, support form, email, or hosting platform associated with the website, that information may be handled according to the privacy terms of that separate channel. Users should avoid entering passwords, payment information, government identification numbers, or other highly sensitive information into an image editor unless the specific feature clearly requires it and provides appropriate protections. The safest principle is data minimization: provide only the information needed for the task and avoid placing confidential information into optional fields.</p></article><article><h3>8. Cookies and Similar Technologies</h3><p>A website can use cookies or similar browser technologies for several purposes, including essential operation, preferences, analytics, or third-party services. The supplied editor code itself primarily demonstrates the editing interface and includes an analytics script, but the complete cookie behavior can also depend on the hosting environment and services loaded by the deployed page. If cookies or similar technologies are used, users can often inspect and manage them through browser settings. Blocking some technologies may affect website functionality or analytics behavior. A privacy decision should therefore consider both the functionality you need and the types of external resources used by the particular deployment of Image Workspace.ARnc.</p></article><article><h3>9. Third-Party Resources</h3><p>The page can depend on external resources where the deployed version includes them. The supplied code contains a Google Analytics script, which is a third-party resource. Other versions or future updates may use additional libraries or services for specific functions. When a browser loads a third-party resource, that provider may receive technical request information such as an IP address and browser-related data as part of normal web communication. Whether any additional data is collected depends on the provider and the exact integration. Users should review the privacy documentation of third-party services when the privacy implications matter to them. The local-first image editor should not be interpreted as a statement that no third-party network request can ever occur.</p></article><article><h3>10. Sensitive Images</h3><p>Users may choose to edit photographs, scans, documents, screenshots, or other material that contains private information. If an image includes a face, address, phone number, email address, identification number, financial information, school information, private messages, or another person’s confidential content, consider whether the image should be processed or shared at all. Local browser processing can reduce the need to transmit the image to an image-processing server, but the image remains present on the user’s device and within the browser’s active memory while it is being edited. Users should also be cautious with screen sharing, browser extensions, malware, cloud backups, and downloaded copies.</p></article><article><h3>11. Children's and Young Users' Information</h3><p>The website is an image editing utility and is not intended to require personal information from users simply to resize or edit an image. Parents and guardians should still guide younger users in avoiding unnecessary disclosure of personal information and in protecting private photographs and documents. If a child uses the website, the relevant privacy protections can also depend on the laws and rules applicable in the child’s location and on any third-party services present on the page. The safest approach is to avoid uploading or entering unnecessary personal information and to use the editor for the intended image-processing task without sharing confidential details.</p></article><article><h3>12. Device and Browser Security</h3><p>Privacy is influenced not only by the website but also by the security of the device and browser. A compromised computer can expose files regardless of whether a website processes them locally. Users should keep their operating system and browser updated, use reputable security software where appropriate, protect their accounts, and avoid installing unknown browser extensions. Shared computers require additional caution because another user may be able to access browser history, downloads, cached information, or locally stored files. When editing sensitive images, use a trusted device and review the destination of exported files. These practices complement the local-first design of the editor rather than replacing it.</p></article><article><h3>13. Downloads and Exported Files</h3><p>When you export an image, the resulting file becomes a normal file under the control of your browser and operating system. Depending on browser settings, downloads may go to a default Downloads folder or another location selected by the user. The website cannot guarantee how a device stores, backs up, synchronizes, scans, or shares a downloaded file. Users should check the destination when handling confidential images. If a file is no longer required, follow the normal secure deletion and storage practices appropriate to the sensitivity of the material. Also remember that sending an exported file through email, messaging apps, social networks, cloud storage, or another website can create additional copies and separate privacy considerations.</p></article><article><h3>14. Privacy and Image Metadata</h3><p>Image metadata can include camera details, creation information, software information, and sometimes location coordinates. The supplied editor specifically provides a privacy export notice explaining that canvas-based export does not preserve original EXIF or GPS metadata. This is a useful privacy-oriented behavior for generated outputs. Nevertheless, metadata is only one part of privacy. A photograph can reveal a location visually, a filename can contain personal information, and a document can contain visible or hidden content. Users should inspect the actual image and filename before sharing. A metadata-clean export cannot guarantee that the visual content itself is anonymous or that another application will not add new metadata after export.</p></article><article><h3>15. Analytics Privacy</h3><p>Because the supplied HTML includes a Google Analytics measurement script, analytics-related requests may occur when the page is loaded or used, subject to the configuration of the deployed site and browser. Analytics systems can collect technical and usage information for measurement purposes. The site owner should provide any notices, consent mechanisms, regional controls, or disclosures required by applicable law. Users who prefer to limit analytics can review browser privacy settings and relevant controls provided by analytics providers. Importantly, analytics collection and image processing are separate concepts. The presence of an analytics script does not by itself establish that the edited image pixels are sent to the analytics service. The actual network behavior of a deployment should be evaluated from its current code and configuration.</p></article><article><h3>16. Data Minimization</h3><p>A useful privacy principle for image editing is data minimization: use only the information necessary for the task. If a photograph can be cropped before sharing, remove unnecessary areas. If a document contains information that the recipient does not need, consider whether it should be included. Avoid placing confidential notes in filenames or text overlays unless they are necessary. When possible, process the smallest suitable copy rather than a full-resolution original when the final destination does not require the extra detail. These practices can reduce exposure regardless of whether processing is local or remote. Image Workspace.ARnc provides editing controls that can support this workflow, but the privacy decision remains with the user.</p></article><article><h3>17. Third-Party Sharing</h3><p>The website does not automatically give the editor permission to publish your image elsewhere. If you choose to upload an exported file to another website, cloud service, social platform, messaging application, or storage provider, that service will have its own terms and privacy practices. The privacy characteristics of the final destination may be more significant than the editor itself once the file leaves the local device. Before sharing sensitive images, users should understand who will receive the file, whether it will be retained, whether it can be downloaded by others, and whether the service uses uploaded content for additional purposes. A local editor can help prepare a file, but it cannot control what another service does with that file.</p></article><article><h3>18. Accuracy of Privacy Statements</h3><p>Privacy statements should describe actual behavior rather than make absolute promises. Image Workspace.ARnc is described as local-first, and the interface states that ordinary image processing is performed in the browser without requiring an upload server. At the same time, the supplied code includes an external analytics script, so the page should not be described as completely network-free. This distinction is important for transparency. Users should rely on the current deployed code, current privacy notice, and current service configuration when making decisions about sensitive information. If the website later adds cloud processing, accounts, online storage, or another external service, its privacy documentation should be updated to explain those changes clearly.</p></article><article><h3>19. Security Limitations</h3><p>No website can guarantee absolute security. Browser software can contain vulnerabilities, devices can be compromised, networks can be monitored, and third-party services can change. Local processing can reduce one type of data transmission, but it cannot eliminate all privacy or security risks associated with using a connected device. The website should therefore be considered one component of a broader security process. Users handling highly sensitive material should follow organizational policies, use trusted devices, maintain backups, limit access, and verify where files are stored. If a file is legally or operationally critical, independent security review may be appropriate. The website is an editing tool and should not be treated as a secure records-management system.</p></article><article><h3>20. Changes to This Privacy Policy</h3><p>The privacy practices of a website may change when features, hosting arrangements, analytics settings, external resources, or legal requirements change. This Privacy Policy should therefore be reviewed periodically. If a future version introduces a new type of data collection, account system, cloud-processing feature, advertising technology, or third-party integration, the privacy documentation should explain the relevant change. Users should check the version and date of the policy available with the deployed website before using it for a sensitive workflow. Continued use after a material update may be subject to the revised terms where applicable, but users should always be given information appropriate to the laws and practices governing the site.</p></article><article><h3>21. Your Choices</h3><p>Users generally have practical choices about how they use the editor. They can choose not to process sensitive material, use a trusted device, select local files deliberately, review exported files, avoid unnecessary sharing, and manage browser privacy settings. Where the website or third-party services provide consent or privacy controls, users can use those controls according to the options available in their region. Browser settings can also control permissions, downloads, cookies, storage, and access to certain features. These controls may affect functionality, so users should review the result after changing privacy settings. Privacy is strongest when technical safeguards and informed user choices work together.</p></article><article><h3>22. Data Retention</h3><p>The supplied editor is designed around in-browser processing rather than a required image-upload database. This means the site is not described as maintaining a permanent server-side library of ordinary edited images. However, retention can still occur in places outside the editor itself, such as the user's original files, downloaded exports, browser storage, backups, cloud synchronization, analytics records, or third-party services. The exact retention period of any third-party service is governed by that service's own policies and configuration. Users should therefore distinguish between retention by the image editor and retention elsewhere in their digital environment.</p></article><article><h3>23. Contact and Privacy Questions</h3><p>If a deployed version of Image Workspace.ARnc provides a contact address or support channel, privacy questions should be directed through that published channel. When contacting support, users should avoid sending confidential images or sensitive personal information unless it is genuinely necessary. A useful support report can describe the browser, device, feature used, approximate image type, and error message without attaching the private image itself. If an attachment is necessary for technical troubleshooting, the user should consider whether the image can be replaced with a non-sensitive test image that demonstrates the same problem.</p></article><article><h3>24. Final Privacy Reminder</h3><p>Image Workspace.ARnc is designed with a local-first image-processing approach, and the supplied interface explicitly communicates that images are processed in the browser without requiring an upload server for the studio. Its export controls also include a privacy-oriented approach to original EXIF and GPS metadata. At the same time, the supplied page includes Google Analytics, and normal web usage can involve network requests for external resources. For that reason, the most accurate privacy approach is balanced: local editing can reduce image transmission to an editing backend, but users should still protect their devices, review third-party services, inspect exported files, minimize sensitive information, and understand where shared files ultimately go. Privacy is a shared responsibility between the application, browser, device, services, and user choices.</p></article><article><h3>25. Privacy in Practical Use</h3><p>The most useful privacy practice is to combine the website’s local-first behavior with careful habits. Before editing, consider whether the image actually needs to be processed and whether a lower-resolution working copy is sufficient. During editing, avoid unnecessary sharing and use a trusted device. Before exporting, review visible information and consider whether metadata or a filename could reveal something private. After exporting, verify the destination folder and avoid sending the file to services that you do not trust. If the image is highly confidential, use organizational security procedures in addition to browser-based local processing. These steps recognize an important distinction: privacy is not a single switch inside an application. It is the result of processing choices, device security, browser settings, storage practices, sharing decisions, and the policies of every service involved in the final workflow.</p></article><article><h3>26. A Clear Privacy Philosophy</h3><p>The privacy approach follows the same practical principle: collect and transmit as little unnecessary information as possible, explain important behavior clearly, and give users control over their files. Local browser processing supports that goal for editor operations, while careful attention to analytics, downloads, third-party services, device security, and sharing remains necessary. Users should make privacy decisions according to the sensitivity of each image and the destination where it will be used.</p></article><article><h3>27. Final Privacy Check</h3><p>Before sharing, check the picture, filename, metadata, destination, and recipient. A few seconds of review can prevent accidental disclosure of information that was not intended to leave the device.</p></article><article><h3>28. Responsible Privacy Decisions</h3><p>Responsible privacy decisions depend on context. A public landscape photograph may need little protection, while a private document or personal photograph may require much more care. Choose the workflow that matches the sensitivity of the material and avoid unnecessary exposure at every step.</p></article><article><h3>29. Privacy in Every Step</h3><p>Review before editing, protect during processing, verify before export, and think carefully before sharing. Good privacy practice continues from the original file to its final destination.</p></article><article><h3>30. Closing Statement</h3><p>Privacy remains yours.
+      ____
+
+      Contact us:
+      Website: Image workspace.ARnc
+      Privacy / Support Email: subham99209114@gmail.com
+      Contact no: 7544095688
+
+      </p></article></section>
+    </div>
+    <div class="site-footer-bottom">
+      © 2026 Image Workspace.ARnc. This footer provides general website and privacy information. Existing editor controls and functionality remain unchanged.
+    </div>
+  </div>
+</footer>
+
 </body>
 </html>
