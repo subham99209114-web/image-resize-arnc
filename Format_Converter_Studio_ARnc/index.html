@@ -352,13 +352,44 @@ function render(){
  if(!items.length){results.innerHTML='<div class="empty">No files selected yet.</div>';return}
  results.innerHTML='';
  items.forEach((it)=>{
-  const url=URL.createObjectURL(it.file),card=document.createElement('div');card.className='card';
-  const isVisual=/\.(jpe?g|png|webp|avif|bmp|gif|tiff?|svg|ico|heic|heif)$/i.test(it.file.name);
-  card.innerHTML=`<div class="thumb">${isVisual?`<img src="${url}" alt="" onerror="this.remove();this.parentNode.innerHTML='<div class=\\'fileicon\\'>${iconFor(it.file)}</div>'">`:`<div class="fileicon">${iconFor(it.file)}</div>`}</div>
-  <div class="cardbody"><div class="name">${escapeHtml(it.file.name)}</div>
-  <div class="meta">Original: ${fmtBytes(it.file.size)}<br>Type: ${escapeHtml(typeLabel(it.file))}<br>Status: Ready</div>
-  <button class="btn red" data-remove="${it.id}">Remove</button></div>`;
+  const card=document.createElement('div');card.className='card';
+  const name=escapeHtml(it.file.name),kind=typeLabel(it.file);
+  card.innerHTML=`<div class="thumb"><div class="fileicon">${iconFor(it.file)}</div></div>
+   <div class="cardbody"><div class="name">${name}</div>
+   <div class="meta">Original: ${fmtBytes(it.file.size)}<br>Type: ${escapeHtml(kind)}<br><span class="preview-status">Status: Preparing preview…</span></div>
+   <button class="btn red" data-remove="${it.id}">Remove</button></div>`;
   results.appendChild(card);
+  const thumb=card.querySelector('.thumb'),status=card.querySelector('.preview-status');
+  const ext=it.file.name.toLowerCase();
+  // HEIC/HEIF and TIFF are not consistently displayable by native <img>.
+  // Decode them locally as soon as files are selected, without waiting for Convert All.
+  (async()=>{
+   try{
+    let imgOrCanvas;
+    if(/\.tiff?$/.test(ext)) imgOrCanvas=await decodeTiff(it.file);
+    else if(/\.heic$|\.heif$/.test(ext)) imgOrCanvas=await decodeHeic(it.file);
+    else if(/\.pdf$/.test(ext)||it.file.type==='application/pdf'){
+     const pages=await decodePdf(it.file);imgOrCanvas=pages[0];
+    } else if(/\.svg$/.test(ext)) imgOrCanvas=await decodeSvg(it.file,1);
+    else imgOrCanvas=await imageFromBlob(it.file);
+    if(!card.isConnected)return;
+    let src;
+    if(imgOrCanvas instanceof HTMLCanvasElement){
+     const b=await canvasToPreviewBlob(imgOrCanvas);if(!b)throw new Error('Preview image could not be created.');src=URL.createObjectURL(b);
+    }else if(/\.heic$|\.heif$/.test(ext)){
+     // heic2any decodes HEIC/HEIF to an Image; draw that decoded image
+     // to canvas and preview the PNG, not the unsupported original file.
+     const w=imgOrCanvas.naturalWidth||imgOrCanvas.width,h=imgOrCanvas.naturalHeight||imgOrCanvas.height;
+     if(!w||!h)throw new Error('Decoded HEIC/HEIF image has no dimensions.');
+     const c=document.createElement('canvas');c.width=w;c.height=h;
+     c.getContext('2d').drawImage(imgOrCanvas,0,0,w,h);
+     const b=await canvasToPreviewBlob(c);if(!b)throw new Error('HEIC/HEIF preview image could not be created.');src=URL.createObjectURL(b);
+    }else src=URL.createObjectURL(it.file);
+    const preview=document.createElement('img');preview.alt='Image preview';preview.src=src;
+    preview.onerror=()=>{preview.remove();status.textContent='Status: Preview unavailable; conversion may still work.'};
+    thumb.replaceChildren(preview);status.textContent='Status: Preview ready';
+   }catch(err){if(card.isConnected)status.textContent='Status: Preview unavailable in this browser';}
+  })();
  });
  results.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{items=items.filter(x=>x.id!==b.dataset.remove);render()});
  stats.innerHTML=`<div class="stat">Files: <b>${items.length}</b></div><div class="stat">Selected size: <b>${fmtBytes(items.reduce((a,x)=>a+x.file.size,0))}</b></div>`;
@@ -377,14 +408,35 @@ async function imageFromBlob(blob){
   img.src=url;
  });
 }
+async function ensureTiffDecoder(){
+ if(window.UTIF && typeof window.UTIF.decode==='function')return window.UTIF;
+ // Recover automatically if the primary CDN was blocked or failed to load.
+ const urls=[
+  'https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.min.js',
+  'https://unpkg.com/utif@3.1.0/UTIF.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/UTIF.js/3.1.0/UTIF.min.js'
+ ];
+ for(const src of urls){
+  try{
+   await new Promise((resolve,reject)=>{
+    const script=document.createElement('script');script.src=src;script.async=true;
+    script.onload=()=>resolve();script.onerror=()=>reject(new Error('Could not load TIFF decoder from '+src));
+    document.head.appendChild(script);
+   });
+   if(window.UTIF && typeof window.UTIF.decode==='function')return window.UTIF;
+  }catch(e){ /* try next trusted CDN */ }
+ }
+ throw new Error('TIFF decoder could not be loaded. Check internet/CDN access and reload the page.');
+}
 async function decodeTiff(file){
- if(!window.UTIF)throw new Error('TIFF decoder library is unavailable.');
- const buf=await file.arrayBuffer(),ifds=UTIF.decode(buf);
+ const TIFF=await ensureTiffDecoder();
+ const buf=await file.arrayBuffer(),ifds=TIFF.decode(buf);
  if(!ifds.length)throw new Error('No TIFF image found.');
- UTIF.decodeImage(buf,ifds[0]);
- const rgba=UTIF.toRGBA8(ifds[0]),w=ifds[0].width,h=ifds[0].height;
+ TIFF.decodeImage(buf,ifds[0]);
+ const rgba=TIFF.toRGBA8(ifds[0]),w=ifds[0].width,h=ifds[0].height;
  const c=document.createElement('canvas');c.width=w;c.height=h;
- c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(rgba),w,h));
+ const ctx=c.getContext('2d');
+ ctx.putImageData(new ImageData(new Uint8ClampedArray(rgba),w,h),0,0);
  return c;
 }
 async function decodeHeic(file){
