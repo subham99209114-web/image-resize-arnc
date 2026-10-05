@@ -1102,6 +1102,17 @@ body:not(.auth-signed-in) .signinProtectedQuickPreset{display:none !important;}
 body.auth-signed-in .signinProtectedQuickPreset{display:block !important;}
 </style>
 <style id='signin-tools-final-fix'>body:not(.auth-signed-in) .signinProtectedTool,body:not(.auth-signed-in) .signinProtectedQuickPreset,body:not(.auth-signed-in) .signinProtectedPreserveQuality{display:none !important;}body.auth-signed-in .signinProtectedQuickPreset{display:block !important;}body:not(.auth-signed-in) #height,body:not(.auth-signed-in) #heightUnit{visibility:visible !important;}</style>
+
+<style id='signin-pdf-dashboard-visibility-css'>
+/* SIGN-IN VISIBILITY ONLY: keep the existing design and functions unchanged.
+   These existing results/controls become visible only after successful Sign In. */
+body:not(.auth-signed-in) .beforeAfter,
+body:not(.auth-signed-in) #pdfDownloadBtn,
+body:not(.auth-signed-in) #batchPdfDownloadBtn {
+  display:none !important;
+}
+</style>
+
 <!-- ResizeImage.ARnc — Google Analytics 4 (background-only tracking; no design changes) -->
 <script async="async" src="https://www.googletagmanager.com/gtag/js?id=G-MT3BX5SKR5"></script>
 <script>
