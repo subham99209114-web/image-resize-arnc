@@ -1031,6 +1031,18 @@ body.uploadOnlyMode #multiFileInput {
 }
 </style>
 
+<style id='signin-website-options-visibility-css'>
+/* SIGN-IN ONLY: the website options shown in the requested image
+   remain completely hidden until Firebase authentication succeeds.
+   Existing design, links, layout and functions are unchanged. */
+body:not(.auth-signed-in) #photoMergeNav{
+  display:none !important;
+}
+body.auth-signed-in #photoMergeNav{
+  display:grid !important;
+}
+</style>
+
 <style id='show-additional-tools-css'>
 .additionalToolsToggle{
   width:100%;
@@ -1640,6 +1652,17 @@ gtag('config', 'G-MT3BX5SKR5', {
 #cropVideoSession #applyCropBtn,
 #cropVideoSession #cancelCropBtn{display:none!important;}
 body.cropVideoSessionOpen{overflow:hidden!important;}
+</style>
+
+
+<style id="signin-image-resize-button-visibility">
+/* SIGN-IN ONLY: keep the existing Image Resize button design and function unchanged. */
+body:not(.auth-signed-in) #imageResizeWebsiteBtn{
+  display:none !important;
+}
+body.auth-signed-in #imageResizeWebsiteBtn{
+  display:inline-block !important;
+}
 </style>
 
 </head>
@@ -6241,7 +6264,7 @@ plusBtn.onclick=function(){q('superStudio').querySelectorAll('.studioTab').forEa
  
  <div> 
   <div style="display:flex; justify-content:center; align-items:center; width:100%; margin:30px 0;">
-  <a href="index without sign in option with all website/" target="_blank"
+  <a id="imageResizeWebsiteBtn" href="index without sign in option with all website/" target="_blank"
      style="
        display:inline-block;
        padding:14px 30px;
