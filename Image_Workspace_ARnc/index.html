@@ -15,6 +15,8 @@
   gtag('config', 'G-8S1C35WS5Q');
 </script>
 
+<script src="https://unpkg.com/utif@3.1.0/UTIF.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <title>Image Workspace.ARnc — Advanced Professional Studio</title>
 <style>
@@ -499,7 +501,7 @@ body.theme-light input[type=text],body.theme-light input[type=number],body.theme
 </div>
 </div>
 
-<input id="fileInput" type="file" accept="image/*" multiple hidden>
+<input id="fileInput" type="file" accept="image/*,.jpg,.jpeg,.jpe,.jfif,.png,.webp,.gif,.bmp,.dib,.tif,.tiff,.avif,.heic,.heif,.heics,.heifs,.svg,.ico,.cur,.jp2,.j2k,.jpf,.jpx,.jpm,.mj2,.raw,.dng,.cr2,.cr3,.crw,.nef,.nrw,.arw,.sr2,.srf,.orf,.rw2,.raf,.pef,.rwl,.3fr,.iiq,.x3f,.erf,.kdc,.dcr,.mrw,.mos,.mef,.ari,.bay,.cap,.cin,.dpx,.exr,.hdr,.pbm,.pgm,.ppm,.pnm,.qoi,.tga,.pcx,.dds,.psd,.psb,.xcf" multiple hidden>
 <div class="modal" id="compareModal"><div class="modal-box"><div class="row"><h2 style="margin:0">Before / After</h2><button class="btn small" style="margin-left:auto" id="closeCompare">Close</button></div><div class="compare" style="margin-top:14px"><div><div class="muted">Original</div><img id="beforeImg" alt="Original"></div><div><div class="muted">Processed</div><img id="afterImg" alt="Processed"></div></div></div></div>
 <div class="toast" id="toast"></div>
 
@@ -542,14 +544,71 @@ function renderThumbs(){
   $('thumbList').querySelectorAll('[data-remove]').forEach(b=>b.onclick=e=>{e.stopPropagation();removeImage(+b.dataset.remove)});
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function loadFile(file){
-  return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>resolve({name:file.name,size:file.size,w:im.naturalWidth,h:im.naturalHeight,src:r.result,img:im,original:r.result});im.onerror=reject;im.src=r.result};r.onerror=reject;r.readAsDataURL(file)})
+/* ===== Universal image loader =====
+   Keeps the existing editor intact while accepting a much wider range of
+   image extensions. Native browser decoding is preferred; TIFF/HEIC have
+   browser-side fallbacks when the optional decoder libraries are available.
+*/
+const ARNC_IMAGE_EXTENSIONS = new Set([
+  'jpg','jpeg','jpe','jfif','png','webp','gif','bmp','dib','tif','tiff','avif',
+  'heic','heif','heics','heifs','svg','ico','cur','jp2','j2k','jpf','jpx','jpm','mj2',
+  'raw','dng','cr2','cr3','crw','nef','nrw','arw','sr2','srf','orf','rw2','raf','pef','rwl',
+  '3fr','iiq','x3f','erf','kdc','dcr','mrw','mos','mef','ari','bay','cap','cin','dpx','exr',
+  'hdr','pbm','pgm','ppm','pnm','qoi','tga','pcx','dds','psd','psb','xcf'
+]);
+function arncExt(name){const m=String(name||'').toLowerCase().match(/\.([a-z0-9]+)$/);return m?m[1]:''}
+function isArncImageFile(file){return !!file && (String(file.type||'').toLowerCase().startsWith('image/') || ARNC_IMAGE_EXTENSIONS.has(arncExt(file.name)))}
+function arncBlobToDataURL(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(blob)})}
+function arncLoadImage(src,name,size){
+  return new Promise((resolve,reject)=>{
+    const im=new Image(); im.decoding='async';
+    im.onload=()=>resolve({name,size,w:im.naturalWidth,h:im.naturalHeight,src,img:im,original:src});
+    im.onerror=()=>reject(new Error('Browser could not decode '+name)); im.src=src;
+  });
+}
+async function arncDecodeSpecial(file,ext){
+  /* HEIC/HEIF: heic2any is only used when native browser decoding fails. */
+  if((ext==='heic'||ext==='heif'||ext==='heics'||ext==='heifs') && window.heic2any){
+    const blob=await window.heic2any({blob:file,type:'image/png'});
+    const out=Array.isArray(blob)?blob[0]:blob;
+    const data=await arncBlobToDataURL(out);
+    return arncLoadImage(data,file.name,file.size);
+  }
+  /* TIFF: UTIF decodes TIFF completely in-browser without a backend. */
+  if((ext==='tif'||ext==='tiff') && window.UTIF){
+    const buf=await file.arrayBuffer();
+    const ifds=window.UTIF.decode(buf); if(!ifds.length)throw new Error('Invalid TIFF');
+    window.UTIF.decodeImage(buf,ifds[0]);
+    const rgba=window.UTIF.toRGBA8(ifds[0]);
+    const c=document.createElement('canvas'); c.width=ifds[0].width; c.height=ifds[0].height;
+    const cx=c.getContext('2d'); cx.putImageData(new ImageData(new Uint8ClampedArray(rgba),c.width,c.height),0,0);
+    const data=c.toDataURL('image/png');
+    return arncLoadImage(data,file.name,file.size);
+  }
+  throw new Error('No compatible decoder');
+}
+async function loadFile(file){
+  if(!isArncImageFile(file))throw new Error('Unsupported image extension');
+  const ext=arncExt(file.name);
+  const url=URL.createObjectURL(file);
+  try{
+    try{return await arncLoadImage(url,file.name,file.size)}
+    catch(nativeErr){
+      try{return await arncDecodeSpecial(file,ext)}catch(specialErr){
+        throw new Error(nativeErr.message+'; '+specialErr.message)
+      }
+    }
+  }finally{URL.revokeObjectURL(url)}
 }
 async function addFiles(files){
-  status('Loading images…'); const list=[];
-  for(const f of files){if(!f.type.startsWith('image/'))continue;try{list.push(await loadFile(f))}catch{}}
+  status('Loading images…'); const list=[]; let failed=0;
+  for(const f of files){
+    if(!isArncImageFile(f)){failed++;continue}
+    try{list.push(await loadFile(f))}catch(err){failed++;console.warn('Image decode failed:',f.name,err)}
+  }
   state.images.push(...list); if(state.images.length && state.active>=state.images.length)state.active=state.images.length-1;
-  if(list.length)selectImage(state.images.length-list.length); else updateUI(); status(`${list.length} image(s) added`);
+  if(list.length)selectImage(state.images.length-list.length); else updateUI();
+  status(`${list.length} image(s) added${failed?` • ${failed} could not be decoded`:''}`);
 }
 function selectImage(i){
   if(!state.images[i])return; state.active=i; state.adjust={brightness:0,contrast:0,saturation:0,exposure:0,warmth:0,blur:0};state.filter='normal';state.hue=0;state.colorOpacity=100;state.sharpness=0;state.vignette=0;state.rotation=0;state.flipX=1;state.flipY=1;
